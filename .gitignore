@@ -1,0 +1,15 @@
+# Godot 4
+.godot/
+.import/
+export.cfg
+export_credentials.cfg
+*.translation
+# Build outputs
+build/
+*.apk
+*.aab
+*.keystore
+!debug.keystore.example
+# OS
+.DS_Store
+Thumbs.db
