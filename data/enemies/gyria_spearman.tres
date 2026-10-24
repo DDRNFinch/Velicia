@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_aa7cr"]
+[ext_resource type="Resource" path="res://data/attacks/gyria_spear_thrust.tres" id="2_3kwlk"]
+[ext_resource type="Resource" path="res://data/attacks/gyria_spear_sweep.tres" id="3_nkgqf"]
+[ext_resource type="Script" path="res://scripts/data/boss_phase.gd" id="4_0r8a8"]
+[ext_resource type="Script" path="res://scripts/data/enemy_definition.gd" id="5_ej11k"]
+
+[resource]
+script = ExtResource("5_ej11k")
+id = &"gyria_spearman"
+display_name = "Gyria Spear-warden"
+people = &"gyria"
+tags = PackedStringArray("gyria", "gyria_scout")
+is_boss = false
+is_draft = true
+max_health = 80.0
+max_poise = 34.0
+defense = 0.0
+walk_speed = 2.0
+run_speed = 4.0
+turn_speed = 7.0
+aggro_range = 14.0
+leash_range = 35.0
+preferred_distance = 3.7
+block_chance = 0.15
+xp_reward = 34
+attacks = Array[ExtResource("1_aa7cr")]([ExtResource("2_3kwlk"), ExtResource("3_nkgqf")])
+phases = Array[ExtResource("4_0r8a8")]([])
+loot = {
+"gyria_token": 0.6,
+"stamina_tonic": 0.3,
+"training_ration": 0.2
+}
+scale = 1.0
+build = &"wiry"
+skin_color = Color(0.44, 0.5, 0.4, 1)
+armor_color = Color(0.3, 0.27, 0.22, 1)
+accent_color = Color(0.6, 0.2, 0.15, 1)
+weapon_kind = &"spear"

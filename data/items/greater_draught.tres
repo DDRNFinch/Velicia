@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/item_definition.gd" id="1_e70kc"]
+
+[resource]
+script = ExtResource("1_e70kc")
+id = &"greater_draught"
+display_name = "Greater Draught"
+description = "Restores 90 health and 30 stamina."
+type = 3
+icon_color = Color(1, 0.4, 0.5, 1)
+max_stack = 99
+value = 25
+weapon_kind = &"sword"
+damage = 0.0
+attack_speed = 1.0
+stamina_cost_mult = 1.0
+reach = 2.3
+defense = 0.0
+armor_color = Color(0.45, 0.38, 0.3, 1)
+bonus_health = 0.0
+bonus_stamina = 0.0
+heal_amount = 90.0
+stamina_restore = 30.0
+ring_tier = 1
+capture_power = 1.0

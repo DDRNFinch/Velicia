@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_jax02"]
+
+[resource]
+script = ExtResource("1_jax02")
+id = &"gyria_spear_sweep"
+display_name = "Spear Sweep"
+windup = 0.75
+active = 0.18
+recovery = 0.8
+damage = 11.0
+poise_damage = 22.0
+stamina_cost = 0.0
+hit_shape = 0
+reach = 3.0
+arc_degrees = 170.0
+knockback = 4.0
+lunge_speed = 0.0
+tracking_until = 0.75
+parryable = true
+unblockable = false
+guard_break = false
+is_heavy = false
+min_range = 0.0
+max_range = 3.0
+cooldown = 3.5
+weight = 1.2
+pose = &"sweep"
+ground_telegraph = false

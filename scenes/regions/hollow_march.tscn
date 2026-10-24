@@ -1,0 +1,455 @@
+[gd_scene load_steps=17 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/region_builder.gd" id="1_r"]
+[ext_resource type="Script" path="res://scripts/world/location_trigger.gd" id="2_r"]
+[ext_resource type="Script" path="res://scripts/world/save_shrine.gd" id="3_r"]
+[ext_resource type="Script" path="res://scripts/world/npc.gd" id="4_r"]
+[ext_resource type="Script" path="res://scripts/enemies/enemy.gd" id="5_r"]
+[ext_resource type="Script" path="res://scripts/world/creature_spawner.gd" id="6_r"]
+[ext_resource type="Script" path="res://scripts/world/chest.gd" id="7_r"]
+[ext_resource type="Script" path="res://scripts/world/lore_stone.gd" id="8_r"]
+[ext_resource type="Script" path="res://scripts/world/loot_pickup.gd" id="9_r"]
+[ext_resource type="Script" path="res://scripts/world/boss_arena.gd" id="10_r"]
+[ext_resource type="Resource" path="res://data/enemies/gyria_skirmisher.tres" id="11_r"]
+[ext_resource type="Resource" path="res://data/enemies/gyria_spearman.tres" id="12_r"]
+[ext_resource type="Resource" path="res://data/enemies/gyria_warchief.tres" id="13_r"]
+[ext_resource type="Resource" path="res://data/creatures/test_creature_alpha.tres" id="14_r"]
+[ext_resource type="Resource" path="res://data/creatures/test_creature_beta.tres" id="15_r"]
+[ext_resource type="Resource" path="res://data/creatures/test_creature_gamma.tres" id="16_r"]
+
+[node name="HollowMarch" type="Node3D"]
+script = ExtResource("1_r")
+region_id = "hollow_march"
+region_name = "The Hollow March"
+terrain_seed = 1337
+paths = Array[PackedStringArray]([PackedStringArray("emoria_outpost", "sentinel_spire"), PackedStringArray("emoria_outpost", "ashfen_camp"), PackedStringArray("sentinel_spire", "broken_fort"), PackedStringArray("emoria_outpost", "mossglade"), PackedStringArray("emoria_outpost", "old_battlefield"), PackedStringArray("mossglade", "glassmere_shallows")])
+lakes = Array[Vector4]([Vector4(-40, 95, 20, -4)])
+forests = Array[Vector4]([Vector4(-95, -30, 70, 0.55), Vector4(-30, -95, 40, 0.3), Vector4(125, -60, 40, 0.3)])
+
+[node name="PlayerSpawn" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 0, 0, 9)
+
+[node name="Locations" type="Node3D" parent="."]
+
+[node name="EmoriaWatchOutpost" type="Area3D" parent="Locations"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+script = ExtResource("2_r")
+location_id = "emoria_outpost"
+display_name = "Emoria Watch Outpost"
+radius = 24.0
+map_icon = "settlement"
+flatten_radius = 22.0
+flatten_height = 4.0
+structure = "outpost"
+
+[node name="SentinelSpire" type="Area3D" parent="Locations"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 35, 0, -75)
+script = ExtResource("2_r")
+location_id = "sentinel_spire"
+display_name = "The Sentinel Spire"
+radius = 22.0
+map_icon = "ruin"
+flatten_radius = 16.0
+flatten_height = 6.0
+structure = "spire"
+
+[node name="AshfenCamp" type="Area3D" parent="Locations"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 95, 0, 5)
+script = ExtResource("2_r")
+location_id = "ashfen_camp"
+display_name = "Ashfen Camp"
+radius = 20.0
+map_icon = "camp"
+flatten_radius = 16.0
+flatten_height = 3.0
+structure = "gyria_camp"
+
+[node name="BrokenFort" type="Area3D" parent="Locations"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 25, 0, -135)
+script = ExtResource("2_r")
+location_id = "broken_fort"
+display_name = "The Broken Fort"
+radius = 24.0
+map_icon = "fort"
+flatten_radius = 22.0
+flatten_height = 8.0
+structure = "fort"
+
+[node name="Mossglade" type="Area3D" parent="Locations"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -75, 0, 40)
+script = ExtResource("2_r")
+location_id = "mossglade"
+display_name = "Mossglade"
+radius = 18.0
+map_icon = "wild"
+flatten_radius = 12.0
+flatten_height = 2.0
+structure = "glade"
+
+[node name="GlassmereStones" type="Area3D" parent="Locations"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -58, 0, 80)
+script = ExtResource("2_r")
+location_id = "glassmere_shallows"
+display_name = "Glassmere Stones"
+radius = 14.0
+map_icon = "lake"
+flatten_radius = 8.0
+flatten_height = 0.0
+structure = "lake_ruin"
+
+[node name="HiddenHollow" type="Area3D" parent="Locations"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -120, 0, -110)
+script = ExtResource("2_r")
+location_id = "hidden_hollow"
+display_name = "The Hidden Hollow"
+radius = 8.0
+map_icon = "cave"
+flatten_radius = 9.0
+flatten_height = 9.0
+flatten_falloff = 10.0
+structure = "grotto"
+
+[node name="OldBattlefield" type="Area3D" parent="Locations"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 75, 0, 85)
+script = ExtResource("2_r")
+location_id = "old_battlefield"
+display_name = "The Old Battlefield"
+radius = 22.0
+map_icon = "ruin"
+structure = "battlefield"
+
+[node name="WhisperpineWood" type="Area3D" parent="Locations"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -95, 0, -30)
+script = ExtResource("2_r")
+location_id = "whisperpine_wood"
+display_name = "Whisperpine Wood"
+radius = 32.0
+map_icon = "wild"
+
+[node name="Shrines" type="Node3D" parent="."]
+
+[node name="outpost_shrine" type="Node3D" parent="Shrines"]
+transform = Transform3D(0.825336, 0, -0.564642, 0, 1, 0, 0.564642, 0, 0.825336, -7, 0, -5)
+script = ExtResource("3_r")
+shrine_id = "outpost_shrine"
+display_name = "Outpost Ring Stone"
+
+[node name="spire_shrine" type="Node3D" parent="Shrines"]
+transform = Transform3D(0.955336, 0, -0.29552, 0, 1, 0, 0.29552, 0, 0.955336, 24, 0, -63)
+script = ExtResource("3_r")
+shrine_id = "spire_shrine"
+display_name = "Spire Ring Stone"
+
+[node name="fort_shrine" type="Node3D" parent="Shrines"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 12, 0, -108)
+script = ExtResource("3_r")
+shrine_id = "fort_shrine"
+display_name = "Fort Road Ring Stone"
+
+[node name="NPCs" type="Node3D" parent="."]
+
+[node name="Warden" type="CharacterBody3D" parent="NPCs"]
+transform = Transform3D(-1, 0, -2.65359e-06, 0, 1, 0, 2.65359e-06, 0, -1, 3, 0, -3)
+script = ExtResource("4_r")
+npc_id = "warden"
+display_name = "Warden Aldren"
+people = &"human"
+variant = 0
+dialogue_id = "warden"
+routine_points = PackedVector3Array(0, 0, 0, 2, 0, 2)
+cloth_color = Color(0.22, 0.28, 0.45, 1)
+
+[node name="RingSage" type="CharacterBody3D" parent="NPCs"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -5, 0, 4)
+script = ExtResource("4_r")
+npc_id = "ring_sage"
+display_name = "Master Oddrin"
+people = &"gouran"
+variant = 1
+dialogue_id = "ring_sage"
+routine_points = PackedVector3Array(0, 0, 0, -2, 0, 1, 1, 0, 2)
+
+[node name="Quartermaster" type="CharacterBody3D" parent="NPCs"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 6, 0, -8)
+script = ExtResource("4_r")
+npc_id = "quartermaster"
+display_name = "Quartermaster Brannoch"
+people = &"burrok"
+variant = 0
+dialogue_id = "quartermaster"
+routine_points = PackedVector3Array(0, 0, 0, -3, 0, 1)
+
+[node name="AmirScout" type="CharacterBody3D" parent="NPCs"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -2, 0, -17)
+script = ExtResource("4_r")
+npc_id = "amir_scout"
+display_name = "Sefa"
+people = &"amir"
+variant = 1
+dialogue_id = "amir_scout"
+routine_points = PackedVector3Array(0, 0, 0, 4, 0, 0)
+routine_pause = 5.0
+walk_speed = 1.6
+
+[node name="Messenger" type="CharacterBody3D" parent="NPCs"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 10, 0, 3)
+script = ExtResource("4_r")
+npc_id = "vapouriun_messenger"
+display_name = "Ilith"
+people = &"vapouriun"
+variant = 0
+dialogue_id = "vapouriun_messenger"
+routine_points = PackedVector3Array(0, 0, 0, 0, 0, 4)
+
+[node name="Kesh" type="CharacterBody3D" parent="NPCs"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 101, 0, 10)
+script = ExtResource("4_r")
+npc_id = "gyria_scout"
+display_name = "Kesh (wounded)"
+people = &"gyria"
+variant = 2
+dialogue_id = "gyria_scout"
+hidden_by_flag = "detained_kesh"
+
+[node name="KeshPrisoner" type="CharacterBody3D" parent="NPCs"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 1, 0, -6)
+script = ExtResource("4_r")
+npc_id = "kesh_prisoner"
+display_name = "Kesh (prisoner)"
+people = &"gyria"
+variant = 2
+dialogue_id = "kesh_prisoner"
+requires_flag = "detained_kesh"
+
+[node name="Enemies" type="Node3D" parent="."]
+
+[node name="SpireScout1" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 30, 0, -70)
+script = ExtResource("5_r")
+definition = ExtResource("11_r")
+variant = 0
+
+[node name="SpireScout2" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 41, 0, -80)
+script = ExtResource("5_r")
+definition = ExtResource("11_r")
+variant = 1
+
+[node name="SpireScout3" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 36, 0, -66)
+script = ExtResource("5_r")
+definition = ExtResource("12_r")
+variant = 2
+
+[node name="CampGuard1" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 90, 0, 0)
+script = ExtResource("5_r")
+definition = ExtResource("11_r")
+variant = 3
+
+[node name="CampGuard2" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 98, 0, -3)
+script = ExtResource("5_r")
+definition = ExtResource("12_r")
+variant = 1
+
+[node name="CampGuard3" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 92, 0, 10)
+script = ExtResource("5_r")
+definition = ExtResource("11_r")
+variant = 2
+
+[node name="FieldPatrol1" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 70, 0, 80)
+script = ExtResource("5_r")
+definition = ExtResource("11_r")
+variant = 0
+patrol_radius = 10.0
+
+[node name="FieldPatrol2" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 80, 0, 90)
+script = ExtResource("5_r")
+definition = ExtResource("12_r")
+variant = 3
+patrol_radius = 10.0
+
+[node name="Warchief" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 25, 0, -138)
+script = ExtResource("5_r")
+definition = ExtResource("13_r")
+variant = 0
+wait_for_engage = true
+unique_id = "warchief_vorga"
+patrol_radius = 3.0
+
+[node name="Creatures" type="Node3D" parent="."]
+
+[node name="MeadowAlpha" type="Node3D" parent="Creatures"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 28, 0, 22)
+script = ExtResource("6_r")
+creature = ExtResource("14_r")
+count = 2
+min_level = 1
+max_level = 2
+spread = 7.0
+
+[node name="GladeAlpha" type="Node3D" parent="Creatures"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -72, 0, 36)
+script = ExtResource("6_r")
+creature = ExtResource("14_r")
+count = 2
+min_level = 2
+max_level = 3
+spread = 7.0
+
+[node name="GladeBeta" type="Node3D" parent="Creatures"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -80, 0, 46)
+script = ExtResource("6_r")
+creature = ExtResource("15_r")
+count = 2
+min_level = 1
+max_level = 3
+spread = 6.0
+
+[node name="LakeBeta" type="Node3D" parent="Creatures"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -48, 0, 70)
+script = ExtResource("6_r")
+creature = ExtResource("15_r")
+count = 1
+min_level = 2
+max_level = 3
+spread = 5.0
+
+[node name="ForestAlpha" type="Node3D" parent="Creatures"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -95, 0, -35)
+script = ExtResource("6_r")
+creature = ExtResource("14_r")
+count = 2
+min_level = 3
+max_level = 4
+spread = 8.0
+
+[node name="HollowGamma" type="Node3D" parent="Creatures"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -100, 0, -92)
+script = ExtResource("6_r")
+creature = ExtResource("16_r")
+count = 1
+min_level = 5
+max_level = 6
+spread = 4.0
+
+[node name="Interactables" type="Node3D" parent="."]
+
+[node name="OutpostChest" type="Node3D" parent="Interactables"]
+transform = Transform3D(0.877583, 0, -0.479426, 0, 1, 0, 0.479426, 0, 0.877583, -14, 0, -1)
+script = ExtResource("7_r")
+chest_id = "outpost_chest"
+loot = {"stamina_tonic": 1, "training_ration": 2}
+
+[node name="SpireChest" type="Node3D" parent="Interactables"]
+transform = Transform3D(0.877583, 0, -0.479426, 0, 1, 0, 0.479426, 0, 0.877583, 40, 0, -84)
+script = ExtResource("7_r")
+chest_id = "spire_chest"
+loot = {"healing_draught": 2, "sentinel_charm": 1}
+
+[node name="AshfenChest" type="Node3D" parent="Interactables"]
+transform = Transform3D(0.877583, 0, -0.479426, 0, 1, 0, 0.479426, 0, 0.877583, 100, 0, -6)
+script = ExtResource("7_r")
+chest_id = "ashfen_chest"
+loot = {"gyria_hookblade": 1, "gyria_scale_vest": 1, "training_ration": 1}
+
+[node name="HollowCache" type="Node3D" parent="Interactables"]
+transform = Transform3D(0.877583, 0, -0.479426, 0, 1, 0, 0.479426, 0, 0.877583, -121, 0, -112)
+script = ExtResource("7_r")
+chest_id = "hollow_cache"
+loot = {"emoria_spear": 1, "greater_draught": 1, "ring_shard": 3}
+hidden_cache = true
+
+[node name="BattlefieldChest" type="Node3D" parent="Interactables"]
+transform = Transform3D(0.877583, 0, -0.479426, 0, 1, 0, 0.479426, 0, 0.877583, 72, 0, 93)
+script = ExtResource("7_r")
+chest_id = "battlefield_chest"
+loot = {"stamina_tonic": 2, "training_ration": 2}
+
+[node name="OutpostStone" type="Node3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -2, 0, -9)
+script = ExtResource("8_r")
+lore_id = "emoria_guild"
+style = "stone"
+prompt = "Read inscription"
+
+[node name="SpireStone" type="Node3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 31, 0, -62)
+script = ExtResource("8_r")
+lore_id = "sentinel_spire"
+style = "stone"
+prompt = "Read inscription"
+
+[node name="AshfenBanner" type="Node3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 88, 0, 8)
+script = ExtResource("8_r")
+lore_id = "gyria_clans"
+style = "banner"
+prompt = "Read banner"
+
+[node name="FortRelic" type="Node3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 25, 0, -124)
+script = ExtResource("8_r")
+lore_id = "broken_fort"
+style = "relic"
+prompt = "Examine relic"
+
+[node name="HollowStone" type="Node3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -118, 0, -107)
+script = ExtResource("8_r")
+lore_id = "hidden_hollow"
+style = "stone"
+prompt = "Read inscription"
+
+[node name="LakeStone" type="Node3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -55, 0, 77)
+script = ExtResource("8_r")
+lore_id = "glassmere_ruins"
+style = "stone"
+prompt = "Read inscription"
+
+[node name="FieldBanner" type="Node3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 78, 0, 78)
+script = ExtResource("8_r")
+lore_id = "old_battlefield"
+style = "banner"
+prompt = "Read banner"
+
+[node name="SealedLetter" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 38, 0, -72)
+script = ExtResource("9_r")
+item_id = "sealed_letter"
+count = 1
+collect_id = "spire_letter"
+
+[node name="SupplyNorth" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 18, 0, -36)
+script = ExtResource("9_r")
+item_id = "supply_bundle"
+count = 1
+collect_id = "supply_north"
+
+[node name="SupplyWest" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -40, 0, 21)
+script = ExtResource("9_r")
+item_id = "supply_bundle"
+count = 1
+collect_id = "supply_west"
+
+[node name="SupplyEast" type="Area3D" parent="Interactables"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 50, 0, 4)
+script = ExtResource("9_r")
+item_id = "supply_bundle"
+count = 1
+collect_id = "supply_east"
+
+[node name="BossArena" type="Area3D" parent="."]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 25, 0, -135)
+script = ExtResource("10_r")
+boss_path = NodePath("../Enemies/Warchief")
+radius = 15.0

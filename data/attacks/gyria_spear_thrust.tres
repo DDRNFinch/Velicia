@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_gegrv"]
+
+[resource]
+script = ExtResource("1_gegrv")
+id = &"gyria_spear_thrust"
+display_name = "Spear Thrust"
+windup = 0.65
+active = 0.15
+recovery = 0.75
+damage = 13.0
+poise_damage = 20.0
+stamina_cost = 0.0
+hit_shape = 1
+reach = 3.2
+arc_degrees = 110.0
+knockback = 3.0
+lunge_speed = 3.0
+tracking_until = 0.75
+parryable = true
+unblockable = false
+guard_break = false
+is_heavy = false
+min_range = 0.0
+max_range = 3.4
+cooldown = 0.5
+weight = 3.0
+pose = &"thrust"
+ground_telegraph = false

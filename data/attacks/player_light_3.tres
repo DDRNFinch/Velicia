@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_o33gj"]
+
+[resource]
+script = ExtResource("1_o33gj")
+id = &"player_light_3"
+display_name = "Driving Thrust"
+windup = 0.2
+active = 0.14
+recovery = 0.44
+damage = 1.5
+poise_damage = 28.0
+stamina_cost = 16.0
+hit_shape = 1
+reach = 2.7
+arc_degrees = 110.0
+knockback = 4.0
+lunge_speed = 6.0
+tracking_until = 0.75
+parryable = true
+unblockable = false
+guard_break = false
+is_heavy = false
+min_range = 0.0
+max_range = 2.6
+cooldown = 0.0
+weight = 1.0
+pose = &"thrust"
+ground_telegraph = false

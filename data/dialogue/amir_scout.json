@@ -1,0 +1,31 @@
+{
+	"id": "amir_scout",
+	"speaker": "Sefa",
+	"draft": true,
+	"entries": [
+		{"conditions": ["quest_active:first_watch"], "node": "spire_tip"}
+	],
+	"start": "hello",
+	"nodes": {
+		"hello": {
+			"text": "I'm Sefa, Amir scout for the Watch. You walk loud for a warrior. Want a tip?",
+			"choices": [
+				{"text": "How do I survive a fight with the Gyria?", "next": "combat"},
+				{"text": "How should I move in a fight?", "next": "move"},
+				{"text": "Later.", "next": "end"}
+			]
+		},
+		"combat": {
+			"text": "Watch the blade, not the face. When their weapon flashes, the strike is coming. Raise your guard just as it lands and you'll knock them off balance — that's a parry. Hit them hard while they're reeling. If they raise their guard, a heavy blow will break it.",
+			"next": "hello"
+		},
+		"move": {
+			"text": "Never stand still. Dodge through an attack, not away from it — for a heartbeat nothing can touch you. But dodging tires you, so mind your stamina. Spears teach you that: keep your distance, strike, step away.",
+			"next": "hello"
+		},
+		"spire_tip": {
+			"text": "Going to the Spire? I counted three Gyria scouts there — two blades and a spear. The spear-warden has reach; get inside it. And look around the ruins afterwards. Scouts always carry something.",
+			"next": "end"
+		}
+	}
+}

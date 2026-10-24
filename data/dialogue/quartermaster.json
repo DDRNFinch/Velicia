@@ -1,0 +1,38 @@
+{
+	"id": "quartermaster",
+	"speaker": "Quartermaster Brannoch",
+	"draft": true,
+	"entries": [
+		{"conditions": ["quest_stage:lost_supplies:1"], "node": "return"},
+		{"conditions": ["quest_active:lost_supplies"], "node": "reminder"},
+		{"conditions": ["quest_not_started:lost_supplies"], "node": "ask"},
+		{"conditions": ["quest_completed:lost_supplies"], "node": "after"}
+	],
+	"start": "after",
+	"nodes": {
+		"ask": {
+			"text": "Mind your head, little warrior — no, I'm teasing. I'm Brannoch. I keep this outpost fed and armed. A supply cart overturned on the roads and the bundles scattered. Three of them. I'd fetch them myself, but the Warden says the outpost needs me where she can see me.",
+			"choices": [
+				{"text": "I'll find your supplies.", "next": "accept", "effects": ["start_quest:lost_supplies"]},
+				{"text": "Not now.", "next": "end"}
+			]
+		},
+		"accept": {
+			"text": "Good. They glow a little — Oddrin's idea, so nothing gets lost twice. Look along the roads east and north, and by the western woods.",
+			"next": "end"
+		},
+		"reminder": {
+			"text": "Three bundles. Roads east, north, and the edge of the western woods.",
+			"next": "end"
+		},
+		"return": {
+			"text": "All three! You've saved me a long talk with the Warden. Here — I cut this axe down for a human grip. It hits like a Burrok, if you can swing it.",
+			"effects": ["take_item:supply_bundle:3"],
+			"next": "end"
+		},
+		"after": {
+			"text": "Burrok carry the heavy things. That's not a complaint — it's a promise. If you ever need something lifted, broken, or held shut, find me.",
+			"next": "end"
+		}
+	}
+}

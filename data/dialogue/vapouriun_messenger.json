@@ -1,0 +1,32 @@
+{
+	"id": "vapouriun_messenger",
+	"speaker": "Ilith",
+	"draft": true,
+	"entries": [
+		{"conditions": ["!flag:ilith_gift", "flag:visited_glassmere_shallows"], "node": "gift"}
+	],
+	"start": "hello",
+	"nodes": {
+		"hello": {
+			"text": "Ilith, of the Vapouriun. I carry the Guild's messages between the outposts — the rivers are faster than the roads, if you know them. You look like someone who asks questions.",
+			"choices": [
+				{"text": "Who are the Vapouriun?", "next": "people"},
+				{"text": "Anything worth seeing in the March?", "next": "places"},
+				{"text": "Safe travels.", "next": "end"}
+			]
+		},
+		"people": {
+			"text": "We were born of the rivers, the stories say. We are quick, we are curious, and we fight with small blades and smaller mistakes. The marks on my skin? They shift with the tide. You're staring.",
+			"next": "hello"
+		},
+		"places": {
+			"text": "Glassmere, the lake to the south-west. There are old Vapouriun stones on its shore — older than the Guild. And people say there's a hollow in the western hills that no map shows. I'd look for it if I were bored.",
+			"next": "hello"
+		},
+		"gift": {
+			"text": "You went to Glassmere! Did the stones speak to you? Here — take this pearl. It breathes with the tide; you'll find your breath lasts longer too.",
+			"effects": ["give_item:tide_pearl", "set_flag:ilith_gift"],
+			"next": "end"
+		}
+	}
+}

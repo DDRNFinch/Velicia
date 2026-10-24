@@ -1,0 +1,59 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_sehh8"]
+[ext_resource type="Resource" path="res://data/attacks/warchief_cleave.tres" id="2_wtpvx"]
+[ext_resource type="Resource" path="res://data/attacks/warchief_slam.tres" id="3_4ibls"]
+[ext_resource type="Resource" path="res://data/attacks/warchief_sweep.tres" id="4_x7l1e"]
+[ext_resource type="Script" path="res://scripts/data/boss_phase.gd" id="5_nox7d"]
+[ext_resource type="Resource" path="res://data/attacks/warchief_charge.tres" id="6_vj22r"]
+[ext_resource type="Resource" path="res://data/attacks/warchief_frenzy.tres" id="7_qbw5e"]
+[ext_resource type="Script" path="res://scripts/data/enemy_definition.gd" id="8_p63tj"]
+
+[sub_resource type="Resource" id="Resource_2putk"]
+script = ExtResource("5_nox7d")
+health_fraction = 1.0
+attacks = Array[ExtResource("1_sehh8")]([ExtResource("2_wtpvx"), ExtResource("3_4ibls"), ExtResource("4_x7l1e")])
+speed_mult = 1.0
+recovery_mult = 1.0
+announcement = ""
+
+[sub_resource type="Resource" id="Resource_df031"]
+script = ExtResource("5_nox7d")
+health_fraction = 0.55
+attacks = Array[ExtResource("1_sehh8")]([ExtResource("2_wtpvx"), ExtResource("3_4ibls"), ExtResource("4_x7l1e"), ExtResource("6_vj22r"), ExtResource("7_qbw5e")])
+speed_mult = 1.2
+recovery_mult = 0.75
+announcement = "The Warchief roars: \"For the hearths of the north!\" Her attacks quicken."
+
+[resource]
+script = ExtResource("8_p63tj")
+id = &"gyria_warchief"
+display_name = "Warchief Vorga (draft name)"
+people = &"gyria"
+tags = PackedStringArray("gyria", "gyria_boss")
+is_boss = true
+is_draft = true
+max_health = 520.0
+max_poise = 120.0
+defense = 8.0
+walk_speed = 2.2
+run_speed = 4.6
+turn_speed = 5.0
+aggro_range = 18.0
+leash_range = 42.0
+preferred_distance = 3.4
+block_chance = 0.0
+xp_reward = 260
+attacks = Array[ExtResource("1_sehh8")]([ExtResource("2_wtpvx"), ExtResource("3_4ibls"), ExtResource("4_x7l1e")])
+phases = Array[ExtResource("5_nox7d")]([SubResource("Resource_2putk"), SubResource("Resource_df031")])
+loot = {
+"greater_draught": 1.0,
+"ring_shard": 1.0,
+"stolen_ringstone": 1.0
+}
+scale = 1.0
+build = &"wiry"
+skin_color = Color(0.42, 0.47, 0.35, 1)
+armor_color = Color(0.3, 0.25, 0.22, 1)
+accent_color = Color(0.75, 0.28, 0.12, 1)
+weapon_kind = &"cleaver"
