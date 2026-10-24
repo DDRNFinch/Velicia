@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="CreatureDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_ability.gd" id="1_gcdcl"]
+[ext_resource type="Script" path="res://scripts/data/creature_definition.gd" id="2_wx85t"]
+
+[sub_resource type="Resource" id="Resource_r4psj"]
+script = ExtResource("1_gcdcl")
+id = &"test_stomp"
+display_name = "Test Stomp"
+description = "Ground slam around it."
+kind = 2
+power = 1.3
+cooldown = 5.0
+ability_range = 3.2
+windup = 0.8
+poise_damage = 30.0
+required_level = 1
+required_bond = 0
+color = Color(0.8, 1, 0.4, 1)
+
+[sub_resource type="Resource" id="Resource_iq6cm"]
+script = ExtResource("1_gcdcl")
+id = &"test_gore"
+display_name = "Test Gore"
+description = "Heavy charge."
+kind = 0
+power = 1.6
+cooldown = 3.0
+ability_range = 2.4
+windup = 0.6
+poise_damage = 30.0
+required_level = 1
+required_bond = 0
+color = Color(1, 0.7, 0.3, 1)
+
+[resource]
+script = ExtResource("2_wx85t")
+id = &"test_creature_gamma"
+display_name = "Test Creature γ"
+is_placeholder = true
+description = "TEMPORARY TEST CREATURE. A large, territorial placeholder that tests hostile-on-sight wild behaviour and the tier-2 ring requirement. Not part of the official roster."
+rarity = 2
+temperament = 1
+base_health = 120.0
+base_attack = 13.0
+base_defense = 5.0
+move_speed = 4.4
+health_per_level = 8.0
+attack_per_level = 1.5
+defense_per_level = 0.5
+max_level = 30
+abilities = Array[ExtResource("1_gcdcl")]([SubResource("Resource_r4psj"), SubResource("Resource_iq6cm")])
+capture_health_threshold = 0.3
+base_capture_chance = 0.6
+min_ring_tier = 2
+capture_condition = &""
+capture_hint = "Requires a tier-2 ring. Weaken it below 30%."
+body_shape = &"quadruped"
+body_color = Color(0.35, 0.38, 0.3, 1)
+accent_color = Color(0.75, 0.95, 0.4, 1)
+eye_color = Color(1, 0.5, 0.3, 1)
+size = 1.5
+wander_radius = 5.0
+flee_when_weak = false
+hostile_on_sight = true

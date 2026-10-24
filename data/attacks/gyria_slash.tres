@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_4etlt"]
+
+[resource]
+script = ExtResource("1_4etlt")
+id = &"gyria_slash"
+display_name = "Hookblade Slash"
+windup = 0.55
+active = 0.14
+recovery = 0.7
+damage = 12.0
+poise_damage = 18.0
+stamina_cost = 0.0
+hit_shape = 0
+reach = 2.2
+arc_degrees = 110.0
+knockback = 3.0
+lunge_speed = 2.5
+tracking_until = 0.75
+parryable = true
+unblockable = false
+guard_break = false
+is_heavy = false
+min_range = 0.0
+max_range = 2.5
+cooldown = 0.4
+weight = 3.0
+pose = &"slash"
+ground_telegraph = false

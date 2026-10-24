@@ -1,0 +1,99 @@
+{
+	"id": "warden",
+	"speaker": "Warden Aldren",
+	"draft": true,
+	"entries": [
+		{"conditions": ["quest_stage:ashes_of_ashfen:4"], "node": "victory"},
+		{"conditions": ["quest_stage:first_watch:3"], "node": "letter"},
+		{"conditions": ["quest_active:the_emoria_watch"], "node": "intro"},
+		{"conditions": ["quest_active:first_watch"], "node": "remind_spire"},
+		{"conditions": ["quest_active:ashes_of_ashfen"], "node": "remind_ashfen"},
+		{"conditions": ["quest_completed:ashes_of_ashfen"], "node": "after"}
+	],
+	"start": "idle",
+	"nodes": {
+		"intro": {
+			"text": "So the Guild finally sent me someone. Welcome to the Emoria Watch, warrior. This outpost guards the Hollow March, and lately the March has not been quiet.",
+			"choices": [
+				{"text": "What does the Guild ask of me here?", "next": "duty"},
+				{"text": "Tell me about the Emoria Guild.", "next": "guild"},
+				{"text": "What do you know of the Gyria?", "next": "gyria"}
+			]
+		},
+		"guild": {
+			"text": "The Emoria Guild is older than any crown in Velicia. We swear to no king — only to the land and all who live on it: humans, Amir, Burrok, Vapouriun, Gouran... and yes, even the Gyria, when they keep the peace. Our rings are our oath made solid. Master Oddrin will teach you their use.",
+			"effects": ["lore:emoria_guild"],
+			"next": "intro_back"
+		},
+		"gyria": {
+			"text": "Lean, hard people. They fight like we do — steel, formation, nerve. Their clans have pushed south all season. Some of them raid. Some of them just look hungry. I have not yet learned which this band is.",
+			"next": "intro_back"
+		},
+		"intro_back": {
+			"text": "Anything else?",
+			"choices": [
+				{"text": "What does the Guild ask of me here?", "next": "duty"},
+				{"text": "Tell me about the Emoria Guild.", "next": "guild"},
+				{"text": "What do you know of the Gyria?", "next": "gyria"}
+			]
+		},
+		"duty": {
+			"text": "Smoke rose over the Sentinel Spire at dawn — the old tower you can see from our gate, due north. Gyria scouts, most likely. Go and see what they want with it. Drive them off if you must. And take these; I'd rather you came back.",
+			"effects": ["start_quest:first_watch", "give_item:healing_draught:2"],
+			"next": "duty2"
+		},
+		"duty2": {
+			"text": "One more thing. Master Oddrin — the Gouran by the tents — wants to put your ring to the test. Do not keep a Gouran waiting; they remember.",
+			"next": "end"
+		},
+		"remind_spire": {
+			"text": "The Spire is due north, along the old road. Watch for scouts in the ruins.",
+			"next": "end"
+		},
+		"letter": {
+			"text": "A sealed letter? Let me see... This is Gyria clan-script. 'The hearths of the north are cold. The Pale Withering takes the high valleys. Warchief Vorga orders: gather the ring-stones, whatever the cost.' They are not raiding for sport. They are fleeing something — and they want our ring-stones to do it.",
+			"choices": [
+				{"text": "Then they are desperate, not monsters. We should learn more.", "next": "letter_mercy", "effects": ["set_flag:warden_heard_mercy"]},
+				{"text": "Desperate or not, they attacked the Watch. They answer for it.", "next": "letter_hard", "effects": ["set_flag:warden_heard_hard"]}
+			]
+		},
+		"letter_mercy": {
+			"text": "Hm. You sound like my old teacher. Very well — understand them, but do not turn your back on them. Their camp lies at Ashfen, east of here. Take this ring; it is set with Spire crystal and will hold stronger creatures.",
+			"effects": ["rep:gyria_clans:5"],
+			"next": "end"
+		},
+		"letter_hard": {
+			"text": "Spoken like a Watch warrior. Their camp lies at Ashfen, east of here. Take this ring; it is set with Spire crystal and will hold stronger creatures. Use it.",
+			"effects": ["rep:emoria_guild:5"],
+			"next": "end"
+		},
+		"remind_ashfen": {
+			"text": "Ashfen lies east along the road. The Warchief must be stopped before she takes every ring-stone in the March.",
+			"next": "end"
+		},
+		"victory": {
+			"text": "You brought back the ring-stone — and you are still breathing. The March owes you, warrior.",
+			"choices": [
+				{"text": "The Warchief spoke of the Pale Withering. What is it?", "next": "withering", "conditions": ["flag:spared_kesh"]},
+				{"text": "What happens now?", "next": "victory_end"}
+			]
+		},
+		"withering": {
+			"text": "The scout you spared told you that? Then it is worse than rumour. Something is draining the north — land, beasts, people. If the Gyria are running from it, it will reach us next. That is a matter for the Guild Council... and, I suspect, for you.",
+			"effects": ["lore:pale_withering", "set_flag:knows_withering"],
+			"next": "victory_end"
+		},
+		"victory_end": {
+			"text": "Rest, train your creatures, and help the outpost where you can. Wear this mail — you have earned it. When the Council's riders come, I will send for you.",
+			"next": "end"
+		},
+		"after": {
+			"text": "The March is quieter thanks to you. Quieter — not safe. Keep your rings close.",
+			"next": "end"
+		},
+		"idle": {
+			"text": "Stay sharp, warrior.",
+			"next": "end"
+		}
+	}
+}

@@ -1,0 +1,47 @@
+{
+	"emoria_guild": {
+		"title": "The Emoria Guild",
+		"draft": true,
+		"text": "An ancient order of specially trained warriors sworn to protect all of Velicia rather than any one crown. Its warriors carry magical rings that can bind creatures, a craft the Guild has guarded for generations. The Guild keeps watch-outposts across the land; the Emoria Watch in the Hollow March is one of the oldest."
+	},
+	"sentinel_spire": {
+		"title": "The Sentinel Spire",
+		"draft": true,
+		"text": "A tapering tower of pale stone crowned by a floating ring of crystal. Guild records say it was raised to watch the northern passes before the outposts existed. The crystal still turns, and ring-stones cut from its foundations hold creatures better than any others."
+	},
+	"gyria_clans": {
+		"title": "The Gyria Clans",
+		"draft": true,
+		"text": "The Gyria are a lean, hardy people organised into clans, each with its own hearth-banner. They fight with steel and discipline much like human soldiers. Their wars with Velicia's other peoples have many causes — old borders, broken treaties, hunger — and not every clan agrees with the others, or with its own warchiefs."
+	},
+	"ring_stones": {
+		"title": "Ring-stones",
+		"draft": true,
+		"text": "Ring-stones are crystals that hold a creature's spirit. Set into a ring and bound with an Emoria oath, they let a warrior carry a creature, call it to fight, and send it back to rest. A creature will only enter a ring once it is weakened; stronger creatures need finer stones."
+	},
+	"pale_withering": {
+		"title": "The Pale Withering",
+		"draft": true,
+		"text": "A blight spreading through the northern valleys. Gyria survivors describe grass turning to grey ash, animals wandering without sense, and sleepers who never wake. Its cause is unknown. (Draft mystery hook — pending author approval.)"
+	},
+	"broken_fort": {
+		"title": "The Broken Fort",
+		"draft": true,
+		"text": "A ring-walled fort north of the Spire, breached long ago. Generations of armies have camped inside its walls, and none have bothered to repair them."
+	},
+	"glassmere_ruins": {
+		"title": "Stones of Glassmere",
+		"draft": true,
+		"text": "Pale pillars stand on the shore of Glassmere, carved with flowing marks that resemble the tide-markings on Vapouriun skin. A shallow pool between them glows faintly at all hours."
+	},
+	"hidden_hollow": {
+		"title": "The Hidden Hollow",
+		"draft": true,
+		"text": "A ring of boulders in the western hills with a single narrow way in. Someone left supplies here and never came back for them. Initials scratched into the stone read 'E.W.' — perhaps an Emoria Watch warrior."
+	},
+	"old_battlefield": {
+		"title": "The Old Battlefield",
+		"draft": true,
+		"text": "Broken blades of human and Gyria make lie side by side in the grass. Cairns mark where the fallen of both sides were buried together. No one at the outpost agrees on who won."
+	}
+}

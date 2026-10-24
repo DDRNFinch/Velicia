@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="ItemDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/item_definition.gd" id="1_0t71v"]
+
+[resource]
+script = ExtResource("1_0t71v")
+id = &"gyria_scale_vest"
+display_name = "Gyria Scale Vest"
+description = "Overlapping iron scales on hide. Gyria armour is plain, repaired many times, and made for long campaigns."
+type = 1
+icon_color = Color(0.5, 0.42, 0.32, 1)
+max_stack = 1
+value = 55
+weapon_kind = &"sword"
+damage = 0.0
+attack_speed = 1.0
+stamina_cost_mult = 1.0
+reach = 2.3
+defense = 10.0
+armor_color = Color(0.36, 0.32, 0.27, 1)
+bonus_health = 0.0
+bonus_stamina = 0.0
+heal_amount = 0.0
+stamina_restore = 0.0
+ring_tier = 1
+capture_power = 1.0

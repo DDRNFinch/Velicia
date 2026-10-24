@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="QuestDefinition" load_steps=10 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_definition.gd" id="1_pbpfh"]
+[ext_resource type="Script" path="res://scripts/data/quest_stage.gd" id="2_cxhs1"]
+[ext_resource type="Script" path="res://scripts/data/quest_objective.gd" id="3_2ncld"]
+
+[sub_resource type="Resource" id="Resource_nvymf"]
+script = ExtResource("3_2ncld")
+type = 3
+target = &"any"
+count = 1
+description = "Capture a wild creature"
+marker_location = &"mossglade"
+
+[sub_resource type="Resource" id="Resource_g5tmf"]
+script = ExtResource("2_cxhs1")
+id = &"capture"
+journal_text = "Weaken a wild creature and bind it to your Apprentice Ring. Mossglade, west of the outpost, is full of them."
+objectives = Array[ExtResource("3_2ncld")]([SubResource("Resource_nvymf")])
+
+[sub_resource type="Resource" id="Resource_tkyht"]
+script = ExtResource("3_2ncld")
+type = 6
+target = &"any"
+count = 1
+description = "Summon your creature"
+marker_location = &""
+
+[sub_resource type="Resource" id="Resource_517ir"]
+script = ExtResource("2_cxhs1")
+id = &"summon"
+journal_text = "Call your new companion from the ring."
+objectives = Array[ExtResource("3_2ncld")]([SubResource("Resource_tkyht")])
+
+[sub_resource type="Resource" id="Resource_61svq"]
+script = ExtResource("3_2ncld")
+type = 0
+target = &"ring_sage"
+count = 1
+description = "Speak with Master Oddrin"
+marker_location = &"emoria_outpost"
+
+[sub_resource type="Resource" id="Resource_50th6"]
+script = ExtResource("2_cxhs1")
+id = &"report"
+journal_text = "Return to Master Oddrin with your companion."
+objectives = Array[ExtResource("3_2ncld")]([SubResource("Resource_61svq")])
+
+[resource]
+script = ExtResource("1_pbpfh")
+id = &"the_ring_trial"
+title = "The Ring Trial"
+summary = "Master Oddrin will teach you the rings once you have bound a creature."
+is_main = false
+is_draft = true
+stages = Array[ExtResource("2_cxhs1")]([SubResource("Resource_g5tmf"), SubResource("Resource_517ir"), SubResource("Resource_50th6")])
+reward_xp = 80
+reward_items = {
+"apprentice_ring": 1,
+"training_ration": 3
+}
+reward_flags = PackedStringArray()
+reward_reputation = {}
+next_quest = &""

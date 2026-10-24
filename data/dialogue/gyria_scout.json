@@ -1,0 +1,45 @@
+{
+	"id": "gyria_scout",
+	"speaker": "Kesh",
+	"draft": true,
+	"entries": [
+		{"conditions": ["flag:spared_kesh"], "node": "spared"},
+		{"conditions": ["quest_stage:ashes_of_ashfen:1"], "node": "meet"}
+	],
+	"start": "wary",
+	"nodes": {
+		"wary": {
+			"text": "(The wounded Gyria watches you, one hand on a broken blade.) Keep walking, Guild-wearer. I have nothing left for you to take.",
+			"next": "end"
+		},
+		"meet": {
+			"text": "(The wounded Gyria scout tries to stand and fails.) So. The Guild sends its best to finish a cripple. Go on, then.",
+			"choices": [
+				{"text": "I'm not here to kill you. Why are your people raiding the March?", "next": "why"},
+				{"text": "You're my prisoner. You'll answer to the Warden.", "next": "detain"}
+			]
+		},
+		"why": {
+			"text": "Raiding. Hah. Our valleys are dying — the Pale Withering, our elders call it. Grass turns to ash, beasts walk off cliffs, children sleep and don't wake. Warchief Vorga says the ring-stones can hold it back. Maybe she's right. Maybe she's mad. Either way, we followed her south.",
+			"effects": ["lore:pale_withering"],
+			"choices": [
+				{"text": "Go home to your people. I won't stop you.", "next": "spare"},
+				{"text": "I'm sorry. But you're coming with me.", "next": "detain"}
+			]
+		},
+		"spare": {
+			"text": "...You're a strange one. Then hear this: Vorga waits at the Broken Fort, north beyond the Spire. She strikes the earth before she charges — when the ground glows, get away from her. And when she roars, she grows faster. Don't let her corner you.",
+			"effects": ["set_flag:spared_kesh", "set_flag:kesh_decided", "rep:gyria_clans:10"],
+			"next": "end"
+		},
+		"detain": {
+			"text": "(Kesh spits, but lets you bind her hands.) The Guild's justice. We'll see what it's worth. Your Warden will find me a poor prize — Vorga is at the Broken Fort, and she won't stop for me.",
+			"effects": ["set_flag:detained_kesh", "set_flag:kesh_decided", "rep:emoria_guild:10", "rep:gyria_clans:-10"],
+			"next": "end"
+		},
+		"spared": {
+			"text": "Still here, Guild-wearer? I'll leave when I can walk. Remember — when the ground glows, move.",
+			"next": "end"
+		}
+	}
+}

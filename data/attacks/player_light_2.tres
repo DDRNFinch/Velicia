@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_4lbih"]
+
+[resource]
+script = ExtResource("1_4lbih")
+id = &"player_light_2"
+display_name = "Return Sweep"
+windup = 0.12
+active = 0.12
+recovery = 0.32
+damage = 1.05
+poise_damage = 12.0
+stamina_cost = 12.0
+hit_shape = 0
+reach = 2.3
+arc_degrees = 150.0
+knockback = 2.0
+lunge_speed = 2.5
+tracking_until = 0.75
+parryable = true
+unblockable = false
+guard_break = false
+is_heavy = false
+min_range = 0.0
+max_range = 2.6
+cooldown = 0.0
+weight = 1.0
+pose = &"sweep"
+ground_telegraph = false

@@ -1,0 +1,20 @@
+{
+	"id": "kesh_prisoner",
+	"speaker": "Kesh",
+	"draft": true,
+	"start": "talk",
+	"nodes": {
+		"talk": {
+			"text": "(Kesh sits bound by the Warden's tent.) Come to gloat? The Withering won't care whose prisoner I was.",
+			"choices": [
+				{"text": "Tell me about the Withering.", "next": "withering"},
+				{"text": "Leave her be.", "next": "end"}
+			]
+		},
+		"withering": {
+			"text": "It takes the colour out of everything. Then the life. We ran. You'd have run too.",
+			"effects": ["lore:pale_withering"],
+			"next": "end"
+		}
+	}
+}

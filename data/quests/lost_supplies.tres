@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="QuestDefinition" load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_definition.gd" id="1_v77gk"]
+[ext_resource type="Script" path="res://scripts/data/quest_stage.gd" id="2_cu57l"]
+[ext_resource type="Script" path="res://scripts/data/quest_objective.gd" id="3_w0wng"]
+
+[sub_resource type="Resource" id="Resource_ch1ej"]
+script = ExtResource("3_w0wng")
+type = 2
+target = &"supply_bundle"
+count = 3
+description = "Recover supply bundles"
+marker_location = &""
+
+[sub_resource type="Resource" id="Resource_tval6"]
+script = ExtResource("2_cu57l")
+id = &"gather"
+journal_text = "Recover the three supply bundles lost along the roads around the outpost."
+objectives = Array[ExtResource("3_w0wng")]([SubResource("Resource_ch1ej")])
+
+[sub_resource type="Resource" id="Resource_pkyd0"]
+script = ExtResource("3_w0wng")
+type = 0
+target = &"quartermaster"
+count = 1
+description = "Return to Quartermaster Brannoch"
+marker_location = &"emoria_outpost"
+
+[sub_resource type="Resource" id="Resource_wm1yd"]
+script = ExtResource("2_cu57l")
+id = &"return"
+journal_text = "Bring the bundles back to the Quartermaster."
+objectives = Array[ExtResource("3_w0wng")]([SubResource("Resource_pkyd0")])
+
+[resource]
+script = ExtResource("1_v77gk")
+id = &"lost_supplies"
+title = "Lost on the Road"
+summary = "Quartermaster Brannoch's supply bundles were scattered when a cart overturned."
+is_main = false
+is_draft = true
+stages = Array[ExtResource("2_cu57l")]([SubResource("Resource_tval6"), SubResource("Resource_wm1yd")])
+reward_xp = 70
+reward_items = {
+"greater_draught": 1,
+"quartermaster_axe": 1
+}
+reward_flags = PackedStringArray()
+reward_reputation = {
+"hollow_settlers": 10
+}
+next_quest = &""

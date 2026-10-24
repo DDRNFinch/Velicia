@@ -1,0 +1,63 @@
+{
+	"id": "ring_sage",
+	"speaker": "Master Oddrin",
+	"draft": true,
+	"entries": [
+		{"conditions": ["quest_stage:the_ring_trial:2"], "node": "trial_done"},
+		{"conditions": ["quest_active:the_ring_trial"], "node": "trial_reminder"},
+		{"conditions": ["quest_not_started:the_ring_trial"], "node": "first"},
+		{"conditions": ["quest_completed:the_ring_trial"], "node": "teacher"}
+	],
+	"start": "teacher",
+	"nodes": {
+		"first": {
+			"text": "Hah. Another tall one with an empty ring. Don't scowl — I'm Oddrin, ring-sage of this outpost, and I've bound more creatures than you've had hot dinners. Shall I teach you, or would you rather learn by being eaten?",
+			"choices": [
+				{"text": "Teach me how the rings work.", "next": "explain"},
+				{"text": "I'll manage on my own.", "next": "stubborn"}
+			]
+		},
+		"explain": {
+			"text": "Simple enough even for you. A creature will not enter a ring at full strength. Weaken it — fight it — until its spirit wavers. Watch for the glow beneath it: that means it can be bound. Then raise your ring and CAPTURE. Some creatures must be dazed first; some need a stronger ring. A ring holds one creature, and you may wear three.",
+			"effects": ["lore:ring_stones"],
+			"next": "explain2"
+		},
+		"explain2": {
+			"text": "Once bound, SUMMON it to fight at your side. Command it to strike your target, or hold it back. Fight together, and the bond between you deepens — and a deeper bond awakens new abilities. Now: go to Mossglade, west of here, bind a creature, call it out, and come back. That is the Ring Trial.",
+			"effects": ["start_quest:the_ring_trial"],
+			"next": "end"
+		},
+		"stubborn": {
+			"text": "Ha! Gouran respect stubbornness. Come back when you've been bitten.",
+			"next": "end"
+		},
+		"trial_reminder": {
+			"text": "Mossglade lies west, past the forest's edge. Weaken a creature until it glows, then capture it. Then summon it. Then come back. Three steps; even a Burrok could manage.",
+			"choices": [
+				{"text": "Train one of my creatures (Training Ration).", "next": "train", "conditions": ["has_creature"]},
+				{"text": "I'm on my way.", "next": "end"}
+			]
+		},
+		"trial_done": {
+			"text": "Well, well. It answers your call. You did not completely embarrass me. Take these rations, and a second ring — you'll need room for more friends.",
+			"next": "teacher"
+		},
+		"teacher": {
+			"text": "Need something? I can train your creatures if you bring Training Rations. Training builds strength and bond.",
+			"choices": [
+				{"text": "Train my creatures.", "next": "train", "conditions": ["has_creature"]},
+				{"text": "Tell me about the Gouran.", "next": "gouran"},
+				{"text": "Farewell.", "next": "end"}
+			]
+		},
+		"train": {
+			"text": "Hold out your ring.",
+			"effects": ["panel:training"],
+			"next": "end"
+		},
+		"gouran": {
+			"text": "We are short, we are ugly, and we are right far more often than you lot. Fire, frost, stone and storm answer to us because we bother to listen. Strength is for people who haven't learned to think.",
+			"next": "teacher"
+		}
+	}
+}
