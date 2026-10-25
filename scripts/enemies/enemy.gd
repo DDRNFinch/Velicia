@@ -752,6 +752,8 @@ func _on_died() -> void:
 	if not unique_id.is_empty():
 		GameState.mark_world("defeated", unique_id)
 	_drop_loot()
+	if randf() < 0.4:
+		HeartPickup.spawn(get_parent(), global_position + Vector3.UP * 0.5)
 	EventBus.enemy_killed.emit(definition.id, definition.tags, global_position)
 	if definition.is_boss:
 		EventBus.boss_defeated.emit(definition.id)

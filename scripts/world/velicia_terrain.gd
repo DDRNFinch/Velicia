@@ -33,9 +33,11 @@ static func height_at(x: float, z: float) -> float:
 	if _noise == null:
 		configure(1337, size, flat_zones, lakes)
 	var half := size * 0.5
-	var h := _noise.get_noise_2d(x, z) * 11.0 + _detail.get_noise_2d(x, z) * 1.2 + 2.0
+	# Gentle rolling ground (the camera looks down on it), ringed by steep
+	# hills that read as the region's natural walls.
+	var h := _noise.get_noise_2d(x, z) * 4.5 + _detail.get_noise_2d(x, z) * 0.6 + 1.0
 	var edge := maxf(absf(x), absf(z))
-	h += smoothstep(half - 55.0, half - 4.0, edge) * 42.0
+	h += smoothstep(half - 36.0, half - 4.0, edge) * 26.0
 	var p := Vector2(x, z)
 	for l in lakes:
 		var d := p.distance_to(l.center)

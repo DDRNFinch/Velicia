@@ -77,25 +77,17 @@ func _run_all() -> void:
 # ------------------------------------------------------------------ Character models
 
 func _test_character_models() -> void:
-	print("[character models]")
+	print("[character bodies]")
 	for people in [&"human", &"amir", &"burrok", &"vapouriun", &"gouran", &"gyria", &"gyria_boss"]:
 		var body := PlaceholderBody.new()
 		add_child(body)
 		body.build(PlaceholderBody.preset(people, 0))
-		var ok := body.model != null and body.model.skeleton != null and body.model.skeleton.get_bone_count() >= 19
-		check(ok, "%s uses a skinned realistic model" % people)
-		if not ok:
-			body.queue_free()
-			continue
-		check(absf(body.height - float(PlaceholderBody.preset(people).height)) < 0.05, "%s model height matches the canon (%.2f m)" % [people, body.height])
+		var meshes := body.find_children("*", "MeshInstance3D", true, false)
+		check(meshes.size() > 3, "%s body builds (%d merged meshes)" % [people, meshes.size()])
 		body.pose_attack(&"slash", 0, 1.0)
 		for i in 10:
 			body.animate(0.05, 0.0, 5.0, true)
-		var arm := body.model.bone("UpperArm_R")
-		var q := body.model.skeleton.get_bone_pose_rotation(arm)
-		check(q.angle_to(Quaternion.IDENTITY) > 0.5, "%s: animation pivots drive the model's bones" % people)
-		var hand := body.model.skeleton.global_transform * body.model.skeleton.get_bone_global_pose(body.model.bone("Hand_R")).origin
-		check(hand.distance_to(body.get_hand_position()) < 0.2 * body.height / 1.78, "%s: weapon hand follows the model's hand" % people)
+		check(body.arm_r.rotation.length() > 0.5, "%s: attack pose moves the sword arm" % people)
 		body.queue_free()
 	await get_tree().process_frame
 
@@ -420,7 +412,7 @@ func _test_gameplay() -> void:
 		await get_tree().physics_frame
 		if enemy.state == Enemy.State.ATTACK:
 			attacked = true
-		if player.stats.health < hp_ai or attacked:
+		if attacked:
 			break
 	check(attacked, "Gyria AI telegraphs and performs attacks")
 
@@ -503,7 +495,25 @@ func _test_gameplay() -> void:
 
 	# World presentation systems
 	var builder: RegionBuilder = game.region
-	check(builder.grass != null and builder.grass.chunk_count() > 0, "grass chunks built around the player (%d)" % (builder.grass.chunk_count() if builder.grass else 0))
+	check(builder.tuft_count > 1000, "ground cover placed (%d grass tufts)" % builder.tuft_count)
+	var bushes := get_tree().get_nodes_in_group("cuttables")
+	check(bushes.size() > 20, "slashable bushes along the roads (%d)" % bushes.size())
+	if bushes.size() > 0:
+		var bush: CuttableBush = bushes[0]
+		var hp_bush := player.stats.health
+		player.stats.set_health(player.stats.max_health * 0.3)
+		bush.receive_hit(HitData.make(player, bush, Database.attack("player_light_1"), 10.0))
+		check(bush.is_cut(), "a bush can be cut")
+		var hearts := get_tree().get_nodes_in_group("heart_pickups")
+		if hearts.size() > 0:
+			var heart: HeartPickup = hearts[0]
+			var before := player.stats.health
+			heart._t = 1.0
+			heart._on_body(player)
+			check(player.stats.health > before, "a recovery heart restores health")
+		player.stats.set_health(hp_bush)
+	var hud_h: HUD = game.hud
+	check(hud_h._hearts != null and hud_h._hearts.custom_minimum_size.x > 0.0, "health is shown as hearts")
 	builder.day_night.set_hour(23.0)
 	check(builder.day_night.is_night() and builder.day_night.sun.light_energy < 0.5, "night falls with the day/night cycle")
 	builder.day_night.set_hour(10.0)
@@ -608,7 +618,7 @@ func _test_gameplay() -> void:
 	_drag(2, look_pos + Vector2(80, 0), Vector2(80, 0))
 	_touch(2, look_pos + Vector2(80, 0), false)
 	await physics_frames(2)
-	check(absf(game.camera_rig.get_yaw() - cam_yaw) > 0.1, "touch drag rotates the camera")
+	check(absf(game.camera_rig.get_yaw() - cam_yaw) < 0.001, "the angled camera stays fixed (no look drag)")
 	# Touch attack actually attacks
 	player.stats.restore_stamina(999)
 	_touch(3, attack_pos, true)

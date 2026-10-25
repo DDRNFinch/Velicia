@@ -18,8 +18,14 @@ S = {k: ext_res("Script", "res://scripts/%s.gd" % v) for k, v in {
 def enemy(id): return ext_res("Resource", "res://data/enemies/%s.tres" % id)
 def creature(id): return ext_res("Resource", "res://data/creatures/%s.tres" % id)
 
+# The angled top-down camera shows ~25 m of ground, so the region is laid out
+# compactly: every coordinate in the tables below is scaled by WS.
+WS = 0.62
+
+
 def tf(x, z, y=0.0, rot=0.0):
     import math
+    x, z = x * WS, z * WS
     c, s = math.cos(rot), math.sin(rot)
     return "Transform3D(%g, 0, %g, 0, 1, 0, %g, 0, %g, %g, %g, %g)" % (c, -s, s, c, x, y, z)
 
@@ -33,10 +39,11 @@ def gd(v):
     if isinstance(v, str): return '"%s"' % v
     return str(v)
 
-node("HollowMarch", "Node3D", None, {"script": S["builder"], "region_id": "hollow_march", "region_name": "The Hollow March", "terrain_seed": 1337,
+node("HollowMarch", "Node3D", None, {"script": S["builder"], "region_id": "hollow_march", "region_name": "The Hollow March", "terrain_seed": 1337, "region_size": 230.0, "cell_size": 2.0,
     "paths": 'Array[PackedStringArray]([PackedStringArray("emoria_outpost", "sentinel_spire"), PackedStringArray("emoria_outpost", "ashfen_camp"), PackedStringArray("sentinel_spire", "broken_fort"), PackedStringArray("emoria_outpost", "mossglade"), PackedStringArray("emoria_outpost", "old_battlefield"), PackedStringArray("mossglade", "glassmere_shallows")])',
-    "lakes": "Array[Vector4]([Vector4(-40, 95, 20, -4)])",
-    "forests": "Array[Vector4]([Vector4(-95, -30, 70, 0.55), Vector4(-30, -95, 40, 0.3), Vector4(125, -60, 40, 0.3)])"})
+    "lakes": "Array[Vector4]([Vector4(%g, %g, %g, -2.5)])" % (-40 * WS, 95 * WS, 20 * WS),
+    "forests": "Array[Vector4]([Vector4(%g, %g, %g, 0.55), Vector4(%g, %g, %g, 0.3), Vector4(%g, %g, %g, 0.3)])" % (
+        -95 * WS, -30 * WS, 70 * WS, -30 * WS, -95 * WS, 40 * WS, 125 * WS, -60 * WS, 40 * WS)})
 node("PlayerSpawn", "Marker3D", ".", {"transform": tf(0, 9)})
 
 node("Locations", "Node3D", ".", {})
@@ -53,8 +60,8 @@ locs = [
  ("whisperpine_wood", "Whisperpine Wood", -95, -30, 32, 0, 0, "", "wild"),
 ]
 for (lid, name, x, z, r, fr, fh, st, icon) in locs:
-    p = {"transform": tf(x, z), "script": S["loc"], "location_id": lid, "display_name": name, "radius": float(r), "map_icon": icon}
-    if fr: p.update({"flatten_radius": float(fr), "flatten_height": float(fh)})
+    p = {"transform": tf(x, z), "script": S["loc"], "location_id": lid, "display_name": name, "radius": float(r) * WS, "map_icon": icon}
+    if fr: p.update({"flatten_radius": float(fr) * WS, "flatten_height": float(fh) * 0.5})
     if lid == "hidden_hollow": p["flatten_falloff"] = 10.0
     if st: p["structure"] = st
     node(name.replace(" ", "").replace("The", ""), "Area3D", "Locations", p)
@@ -103,7 +110,7 @@ for (nm, eid, x, z, var, extra) in enemies:
 
 node("Creatures", "Node3D", ".", {})
 spawners = [
- ("MeadowAlpha", "test_creature_alpha", 28, 22, 2, 1, 2, 7.0),
+ ("MeadowAlpha", "test_creature_alpha", 46, 40, 2, 1, 2, 7.0),
  ("GladeAlpha", "test_creature_alpha", -72, 36, 2, 2, 3, 7.0),
  ("GladeBeta", "test_creature_beta", -80, 46, 2, 1, 3, 6.0),
  ("LakeBeta", "test_creature_beta", -48, 70, 1, 2, 3, 5.0),
@@ -111,7 +118,7 @@ spawners = [
  ("HollowGamma", "test_creature_gamma", -100, -92, 1, 5, 6, 4.0),
 ]
 for (nm, cid, x, z, count, lo, hi, spread) in spawners:
-    node(nm, "Node3D", "Creatures", {"transform": tf(x, z), "script": S["spawner"], "creature": creature(cid), "count": count, "min_level": lo, "max_level": hi, "spread": spread})
+    node(nm, "Node3D", "Creatures", {"transform": tf(x, z), "script": S["spawner"], "creature": creature(cid), "count": count, "min_level": lo, "max_level": hi, "spread": spread * WS})
 
 node("Interactables", "Node3D", ".", {})
 chests = [
@@ -142,7 +149,7 @@ pickups = [
 for (nm, iid, n, cid, x, z) in pickups:
     node(nm, "Area3D", "Interactables", {"transform": tf(x, z), "script": S["pickup"], "item_id": iid, "count": n, "collect_id": cid})
 
-node("BossArena", "Area3D", ".", {"transform": tf(25, -135), "script": S["arena"], "boss_path": 'NodePath("../Enemies/Warchief")', "radius": 15.0})
+node("BossArena", "Area3D", ".", {"transform": tf(25, -135), "script": S["arena"], "boss_path": 'NodePath("../Enemies/Warchief")', "radius": 15.0 * WS})
 
 lines = ['[gd_scene load_steps=%d format=3]' % (len(ext) + 1), '']
 for path, (kind, rid) in ext.items():

@@ -92,8 +92,6 @@ func _shoot_game() -> void:
 	gy.rotation.y = PI
 	player.global_position = base + Vector3(0, 0.5, 7.0)
 	player.rotation.y = 0.0
-	rig.yaw_node.rotation.y = 0.0
-	rig.pitch_node.rotation.x = deg_to_rad(-6.0)
 	rig.global_position = player.global_position + Vector3.UP * 1.55
 	await _frames(20)
 	await _snap("04_peoples_lineup")
@@ -107,8 +105,6 @@ func _shoot_game() -> void:
 	player.global_position = Vector3(0, 6.0, -10.0)
 	var to_spire := Vector3(35, 0, -75) - player.global_position
 	player.rotation.y = atan2(-to_spire.x, -to_spire.z)
-	rig.yaw_node.rotation.y = player.rotation.y
-	rig.pitch_node.rotation.x = deg_to_rad(4.0)
 	rig.global_position = player.global_position + Vector3.UP * 1.55
 	await _frames(30)
 	await _snap("05_landmark_spire")
@@ -117,8 +113,6 @@ func _shoot_game() -> void:
 	var scout: Enemy = game.region.get_node("Enemies/SpireScout1")
 	player.global_position = scout.global_position + Vector3(0, 0.5, 4.0)
 	player.rotation.y = 0.0
-	rig.yaw_node.rotation.y = 0.3
-	rig.pitch_node.rotation.x = deg_to_rad(-12.0)
 	rig.global_position = player.global_position + Vector3.UP * 1.55
 	await _frames(70)
 	await _snap("06_combat_spire")
@@ -129,8 +123,6 @@ func _shoot_game() -> void:
 	player.global_position = camp_shield.global_position + Vector3(-6, 0.5, 3)
 	var to_camp := camp_shield.global_position - player.global_position
 	player.rotation.y = atan2(-to_camp.x, -to_camp.z)
-	rig.yaw_node.rotation.y = player.rotation.y
-	rig.pitch_node.rotation.x = deg_to_rad(-10.0)
 	rig.global_position = player.global_position + Vector3.UP * 1.55
 	await _frames(90)
 	await _snap("06b_archer_shield_camp")
@@ -148,8 +140,6 @@ func _shoot_game() -> void:
 	game.add_child(wild2)
 	wild2.global_position = player.global_position + Vector3(2.5, 0.5, -4)
 	player.rotation.y = 0.0
-	rig.yaw_node.rotation.y = 0.0
-	rig.pitch_node.rotation.x = deg_to_rad(-15.0)
 	rig.global_position = player.global_position + Vector3.UP * 1.55
 	await _frames(15)
 	wild.stats.set_health(wild.stats.max_health * 0.3)
@@ -181,8 +171,6 @@ func _shoot_game() -> void:
 	player.stats.set_health(100000.0)
 	player.global_position = boss.global_position + Vector3(0, 0.5, 7.0)
 	player.rotation.y = 0.0
-	rig.yaw_node.rotation.y = 0.0
-	rig.pitch_node.rotation.x = deg_to_rad(-8.0)
 	rig.global_position = player.global_position + Vector3.UP * 1.55
 	await _frames(60)
 	await _snap("10_boss_warchief")

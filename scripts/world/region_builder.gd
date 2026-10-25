@@ -4,7 +4,8 @@ extends Node3D
 ## forests, rocks, paths, water, sky/lighting and structure kits placed at
 ## each LocationTrigger. Gameplay entities placed in the scene (NPCs,
 ## enemies, chests, shrines...) are snapped onto the terrain.
-## PLACEHOLDER ART: structures are primitive kits until modular art exists.
+## Art style: faceted low-poly shapes and palette colours (see LowPoly),
+## built for the fixed angled camera.
 
 @export var region_id: String = "hollow_march"
 @export var region_name: String = "The Hollow March"
@@ -28,9 +29,10 @@ var _forest_noise: FastNoiseLite
 var _quality := "medium"
 var _rng := RandomNumberGenerator.new()
 var _sun: DirectionalLight3D
-var _sky_material: ShaderMaterial
 var day_night: DayNight
-var grass: GrassField
+var _kit_scale := 0.72
+## Number of grass tufts placed (for tests / budgets).
+var tuft_count := 0
 
 
 func _enter_tree() -> void:
@@ -86,11 +88,8 @@ func _ready() -> void:
 			_build_structure(lt)
 	_build_trees()
 	_build_rocks()
-	grass = GrassField.new()
-	grass.name = "Grass"
-	grass.weight_func = ground_weights
-	grass.configure(_quality)
-	add_child(grass)
+	_build_ground_cover()
+	_build_cuttables()
 
 
 func get_location(id: String) -> LocationTrigger:
@@ -101,46 +100,46 @@ func get_location(id: String) -> LocationTrigger:
 
 func _build_environment() -> void:
 	var env := Environment.new()
-	env.background_mode = Environment.BG_SKY
-	var sky := Sky.new()
-	_sky_material = VeliciaMaterials.sky()
-	sky.sky_material = _sky_material
-	sky.radiance_size = Sky.RADIANCE_SIZE_64
-	env.sky = sky
-	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	env.ambient_light_energy = 0.55
-	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
-	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 1.05
-	env.tonemap_white = 6.0
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color(0.55, 0.66, 0.74)
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color(0.52, 0.6, 0.78)
+	env.ambient_light_energy = 0.5
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.tonemap_exposure = 0.92
+	env.tonemap_white = 4.0
 	env.fog_enabled = true
-	env.fog_light_color = Color(0.66, 0.7, 0.76)
-	env.fog_density = 0.0032 if _quality != "low" else 0.006
-	env.fog_sky_affect = 0.25
+	env.fog_light_color = Color(0.45, 0.58, 0.68)
+	env.fog_light_energy = 0.8
+	env.fog_density = 0.0016 if _quality != "low" else 0.003
+	env.glow_enabled = _quality != "low"
+	env.glow_intensity = 0.4
+	env.glow_bloom = 0.0
+	env.glow_hdr_threshold = 1.6
 	env.adjustment_enabled = true
-	env.adjustment_saturation = 1.12
-	env.adjustment_contrast = 1.06
+	env.adjustment_saturation = 1.18
+	env.adjustment_contrast = 1.12
 	var we := WorldEnvironment.new()
 	we.name = "WorldEnvironment"
 	we.environment = env
 	add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.name = "Sun"
-	sun.rotation_degrees = Vector3(-48, -35, 0)
-	sun.light_color = Color(1.0, 0.94, 0.84)
-	sun.light_energy = 1.0
+	sun.rotation_degrees = Vector3(-52, -38, 0)
+	sun.light_color = Color(1.0, 0.9, 0.74)
+	sun.light_energy = 1.05
 	sun.shadow_enabled = bool(Settings.get_value("graphics", "shadows")) and _quality != "low"
-	sun.shadow_bias = 0.04
-	sun.shadow_normal_bias = 1.2
-	sun.shadow_blur = 1.5
+	sun.shadow_bias = 0.03
+	sun.shadow_normal_bias = 1.0
+	sun.shadow_blur = 1.2
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	sun.directional_shadow_max_distance = 50.0 if _quality == "high" else 32.0
+	sun.directional_shadow_max_distance = 48.0
 	add_child(sun)
 	_sun = sun
 	day_night = DayNight.new()
 	day_night.name = "DayNight"
 	add_child(day_night)
-	day_night.setup(sun, env, _sky_material)
+	day_night.setup(sun, env, null)
 	Settings.changed.connect(_on_settings_changed)
 
 
@@ -152,48 +151,32 @@ func _on_settings_changed(section: String, key: String) -> void:
 # ------------------------------------------------------------------ Terrain
 
 func _build_terrain() -> void:
+	# Faceted terrain: every triangle gets one colour from the ground weights
+	# at its centre plus a little noise, so fields read as low-poly patchwork.
 	var half := region_size * 0.5
 	var n := int(region_size / cell_size)
-	var verts := PackedVector3Array()
-	var normals := PackedVector3Array()
-	var colors := PackedColorArray()
-	var uvs := PackedVector2Array()
-	var indices := PackedInt32Array()
-	verts.resize((n + 1) * (n + 1))
-	normals.resize(verts.size())
-	colors.resize(verts.size())
-	uvs.resize(verts.size())
+	var heights := PackedFloat32Array()
+	heights.resize((n + 1) * (n + 1))
 	for iz in n + 1:
 		for ix in n + 1:
-			var x := -half + ix * cell_size
-			var z := -half + iz * cell_size
-			var i := iz * (n + 1) + ix
-			verts[i] = Vector3(x, VeliciaTerrain.height_at(x, z), z)
-			normals[i] = VeliciaTerrain.normal_at(x, z)
-			colors[i] = ground_weights(x, z)
-			uvs[i] = Vector2(x, z) * 0.1
+			heights[iz * (n + 1) + ix] = VeliciaTerrain.height_at(-half + ix * cell_size, -half + iz * cell_size)
+	var b := LowPoly.Builder.new()
 	for iz in n:
 		for ix in n:
-			var a := iz * (n + 1) + ix
-			var b := a + 1
-			var c := a + (n + 1)
-			var d := c + 1
-			indices.append_array([a, b, c, b, d, c])
-	var arrays := []
-	arrays.resize(Mesh.ARRAY_MAX)
-	arrays[Mesh.ARRAY_VERTEX] = verts
-	arrays[Mesh.ARRAY_NORMAL] = normals
-	arrays[Mesh.ARRAY_COLOR] = colors
-	arrays[Mesh.ARRAY_TEX_UV] = uvs
-	arrays[Mesh.ARRAY_INDEX] = indices
-	var mesh := ArrayMesh.new()
-	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	# Tangents are needed for the terrain normal maps.
-	var st := SurfaceTool.new()
-	st.create_from(mesh, 0)
-	st.generate_tangents()
-	mesh = st.commit()
-	mesh.surface_set_material(0, VeliciaMaterials.terrain())
+			var x0 := -half + ix * cell_size
+			var z0 := -half + iz * cell_size
+			var a := Vector3(x0, heights[iz * (n + 1) + ix], z0)
+			var bb := Vector3(x0 + cell_size, heights[iz * (n + 1) + ix + 1], z0)
+			var c := Vector3(x0, heights[(iz + 1) * (n + 1) + ix], z0 + cell_size)
+			var d := Vector3(x0 + cell_size, heights[(iz + 1) * (n + 1) + ix + 1], z0 + cell_size)
+			# Alternate the diagonal for a less regular facet pattern.
+			if (ix + iz) % 2 == 0:
+				b.tri(a, bb, c, ground_color((a + bb + c) / 3.0))
+				b.tri(bb, d, c, ground_color((bb + d + c) / 3.0))
+			else:
+				b.tri(a, d, c, ground_color((a + d + c) / 3.0))
+				b.tri(a, bb, d, ground_color((a + bb + d) / 3.0))
+	var mesh := b.commit(VeliciaMaterials.terrain())
 	var mi := MeshInstance3D.new()
 	mi.name = "Terrain"
 	mi.mesh = mesh
@@ -207,6 +190,24 @@ func _build_terrain() -> void:
 	add_child(body)
 
 
+## Palette colour of the ground at a point (used by the faceted terrain).
+func ground_color(p: Vector3) -> Color:
+	var w := ground_weights(p.x, p.z)
+	var nz := _detail_noise.get_noise_2d(p.x * 1.7, p.z * 1.7)
+	var patch := _forest_noise.get_noise_2d(p.x * 2.5, p.z * 2.5)
+	# Soft patchwork: neighbouring facets differ only slightly.
+	var g := LowPoly.c("grass").lerp(LowPoly.c("grass_dark"), smoothstep(-0.1, 0.5, patch) * 0.8)
+	g = g.lerp(LowPoly.c("grass_light"), smoothstep(0.1, 0.6, -patch) * 0.45)
+	g = g.lerp(LowPoly.c("grass_dry"), smoothstep(0.3, 0.7, nz) * 0.35)
+	var col := g
+	col = col.lerp(LowPoly.c("dirt") if nz > -0.2 else LowPoly.c("dirt_dark"), smoothstep(0.35, 0.6, w.r))
+	col = col.lerp(LowPoly.c("rock") if nz > 0.0 else LowPoly.c("rock_dark"), smoothstep(0.3, 0.55, w.g))
+	col = col.lerp(LowPoly.c("sand"), smoothstep(0.35, 0.6, w.b))
+	col = col.lerp(LowPoly.c("snow"), smoothstep(0.4, 0.7, w.a))
+	var j := sin(p.x * 12.9898 + p.z * 78.233) * 0.025
+	return col.lightened(j) if j > 0.0 else col.darkened(-j)
+
+
 ## Ground material weights at a point: r = dirt, g = rock, b = sand, a = snow
 ## (grass is whatever remains). Shared by the terrain shader, grass and trees.
 func ground_weights(x: float, z: float) -> Color:
@@ -214,10 +215,8 @@ func ground_weights(x: float, z: float) -> Color:
 	var nrm := VeliciaTerrain.normal_at(x, z)
 	var slope := 1.0 - nrm.y
 	var dirt := 0.0
-	if VeliciaTerrain.in_flat_zone(x, z, -3.0):
-		dirt = 0.7
-	elif VeliciaTerrain.in_flat_zone(x, z, 2.0):
-		dirt = 0.35
+	if VeliciaTerrain.in_flat_zone(x, z, -7.0):
+		dirt = 0.62
 	var pd := _path_distance(x, z)
 	dirt = maxf(dirt, 1.0 - smoothstep(1.4, 3.2, pd))
 	dirt = maxf(dirt, clampf(_detail_noise.get_noise_2d(x * 0.6, z * 0.6) - 0.35, 0.0, 1.0) * 1.2)
@@ -252,8 +251,6 @@ func _path_distance(x: float, z: float) -> float:
 func _build_water() -> void:
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(region_size, region_size)
-	plane.subdivide_width = 48
-	plane.subdivide_depth = 48
 	var mi := MeshInstance3D.new()
 	mi.name = "Water"
 	mi.mesh = plane
@@ -280,58 +277,58 @@ func _build_bounds() -> void:
 # -------------------------------------------------------------- Vegetation
 
 func _build_trees() -> void:
-	var density: float = {"low": 0.45, "medium": 0.75, "high": 1.0}.get(_quality, 0.75)
+	var density: float = {"low": 0.55, "medium": 0.8, "high": 1.0}.get(_quality, 0.8)
 	var half := region_size * 0.5
 	var rng := RandomNumberGenerator.new()
 	rng.seed = terrain_seed
-	var step := 6.5
+	var step := 3.4
 	var chunks := {}
 	_tree_colliders = StaticBody3D.new()
 	_tree_colliders.name = "TreeColliders"
 	add_child(_tree_colliders)
 	var trunk_shape := CylinderShape3D.new()
-	trunk_shape.radius = 0.36
-	trunk_shape.height = 4.0
-	var x := -half + 10.0
-	while x < half - 10.0:
-		var z := -half + 10.0
-		while z < half - 10.0:
-			var px := x + rng.randf_range(-2.8, 2.8)
-			var pz := z + rng.randf_range(-2.8, 2.8)
+	trunk_shape.radius = 0.42
+	trunk_shape.height = 3.0
+	var x := -half + 6.0
+	while x < half - 6.0:
+		var z := -half + 6.0
+		while z < half - 6.0:
+			var px := x + rng.randf_range(-1.4, 1.4)
+			var pz := z + rng.randf_range(-1.4, 1.4)
 			z += step
-			var chance := 0.05 + clampf(_forest_noise.get_noise_2d(px, pz) + 0.15, 0.0, 1.0) * 0.55
+			var chance := 0.03 + clampf(_forest_noise.get_noise_2d(px, pz) + 0.1, 0.0, 1.0) * 0.6
 			for f in forests:
-				var d := Vector2(px, pz).distance_to(Vector2(f.x, f.y))
-				chance += (1.0 - smoothstep(f.z * 0.4, f.z, d)) * f.w
+				var dd := Vector2(px, pz).distance_to(Vector2(f.x, f.y))
+				chance += (1.0 - smoothstep(f.z * 0.4, f.z, dd)) * f.w
 			if rng.randf() > chance * density:
 				continue
-			if VeliciaTerrain.in_flat_zone(px, pz, 5.0) or VeliciaTerrain.in_lake(px, pz, 2.0) or _path_distance(px, pz) < 4.0:
+			if VeliciaTerrain.in_flat_zone(px, pz, 3.0) or VeliciaTerrain.in_lake(px, pz, 1.5) or _path_distance(px, pz) < 2.6:
 				continue
 			var h := VeliciaTerrain.height_at(px, pz)
-			if h > 30.0 or VeliciaTerrain.normal_at(px, pz).y < 0.82:
+			if h > 26.0 or VeliciaTerrain.normal_at(px, pz).y < 0.8:
 				continue
-			var key := Vector2i(floori(px / CHUNK), floori(pz / CHUNK))
+			var key := Vector2i(floori(px / 40.0), floori(pz / 40.0))
 			if not chunks.has(key):
 				chunks[key] = {}
-			var is_pine := rng.randf() < 0.5 or h > 15.0
-			var variant := ("pine%d" if is_pine else "broad%d") % rng.randi_range(0, 1)
+			var is_pine := rng.randf() < 0.35 or h > 12.0
+			var autumn := not is_pine and rng.randf() < 0.12
+			var variant := ("pine%d" % rng.randi_range(0, 1)) if is_pine else (("autumn%d" if autumn else "tree%d") % rng.randi_range(0, 2))
 			if not chunks[key].has(variant):
 				chunks[key][variant] = []
-			var s := rng.randf_range(0.8, 1.25)
-			var t := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.15), s)), Vector3(px, h - 0.15, pz))
+			var sc := rng.randf_range(0.85, 1.25)
+			var t := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(sc, sc * rng.randf_range(0.9, 1.1), sc)), Vector3(px, h - 0.1, pz))
 			chunks[key][variant].append([t, rng.randf()])
 			var col := CollisionShape3D.new()
 			col.shape = trunk_shape
-			col.position = Vector3(px, h + 2.0, pz)
+			col.position = Vector3(px, h + 1.5, pz)
 			_tree_colliders.add_child(col)
 		x += step
-	var view := float(Settings.get_value("graphics", "view_distance"))
 	for key in chunks:
 		for variant in chunks[key]:
-			var v := int(String(variant).right(1))
-			var mesh: Mesh = Vegetation.pine(v) if String(variant).begins_with("pine") else Vegetation.broadleaf(v)
-			var tint := Color(0.85, 0.95, 0.85) if String(variant).begins_with("pine") else Color(1.0, 1.0, 0.9)
-			_multimesh(mesh, null, chunks[key][variant], Vector3.ZERO, view, tint, true)
+			var vs := String(variant)
+			var v := int(vs.right(1))
+			var mesh: Mesh = LowPoly.pine(v) if vs.begins_with("pine") else LowPoly.tree(v, vs.begins_with("autumn"))
+			_multimesh(mesh, null, chunks[key][variant], Vector3.ZERO, 60.0, Color.WHITE, true)
 
 
 func _multimesh(mesh: Mesh, material: Material, entries: Array, offset: Vector3, view: float, base_color: Color, tint: bool) -> void:
@@ -347,7 +344,7 @@ func _multimesh(mesh: Mesh, material: Material, entries: Array, offset: Vector3,
 		mm.set_instance_transform(i, Transform3D(t.basis, t.origin + t.basis * offset))
 		if tint:
 			var v: float = entries[i][1]
-			mm.set_instance_color(i, base_color.lerp(base_color.lightened(0.18), v).darkened(0.12 * (1.0 - v)))
+			mm.set_instance_color(i, base_color.lerp(base_color.lightened(0.1), v).darkened(0.14 * (1.0 - v)))
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	if material:
@@ -364,25 +361,109 @@ func _build_rocks() -> void:
 	var body := StaticBody3D.new()
 	body.name = "RockColliders"
 	add_child(body)
-	for i in 190:
-		var x := rng.randf_range(-half + 12.0, half - 12.0)
-		var z := rng.randf_range(-half + 12.0, half - 12.0)
-		if VeliciaTerrain.in_flat_zone(x, z, 3.0) or _path_distance(x, z) < 3.5:
+	for i in 260:
+		var x := rng.randf_range(-half + 8.0, half - 8.0)
+		var z := rng.randf_range(-half + 8.0, half - 8.0)
+		if VeliciaTerrain.in_flat_zone(x, z, 2.0) or _path_distance(x, z) < 2.4:
 			continue
 		var h := VeliciaTerrain.height_at(x, z)
-		var s := rng.randf_range(0.35, 2.4)
-		var t := Transform3D(Basis.from_euler(Vector3(rng.randf() * 0.3, rng.randf() * TAU, rng.randf() * 0.3)).scaled(Vector3(s * rng.randf_range(0.9, 1.5), s * rng.randf_range(0.7, 1.1), s)), Vector3(x, h + s * 0.15, z))
+		var sc := rng.randf_range(0.3, 1.6)
+		if rng.randf() < 0.08:
+			sc = rng.randf_range(2.0, 3.2)
+		var t := Transform3D(Basis.from_euler(Vector3(rng.randf() * 0.25, rng.randf() * TAU, rng.randf() * 0.25)).scaled(Vector3(sc * rng.randf_range(0.9, 1.4), sc * rng.randf_range(0.7, 1.1), sc)), Vector3(x, h - sc * 0.15, z))
 		entries[i % 3].append([t, rng.randf()])
-		if s > 1.0:
+		if sc > 0.7:
 			var col := CollisionShape3D.new()
 			var sphere := SphereShape3D.new()
-			sphere.radius = s * 0.85
+			sphere.radius = sc * 0.8
 			col.shape = sphere
-			col.position = Vector3(x, h + s * 0.15, z)
+			col.position = Vector3(x, h + sc * 0.2, z)
 			body.add_child(col)
-	var view := float(Settings.get_value("graphics", "view_distance"))
 	for v in 3:
-		_multimesh(Vegetation.rock(v), null, entries[v], Vector3.ZERO, view, Color.WHITE, false)
+		_multimesh(LowPoly.rock(v), null, entries[v], Vector3.ZERO, 60.0, Color.WHITE, true)
+
+
+## Slashable bushes along the roads and around settlements (they drop hearts).
+func _build_cuttables() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = terrain_seed + 17
+	var root := Node3D.new()
+	root.name = "Cuttables"
+	add_child(root)
+	for seg in _path_segments:
+		var a: Vector2 = seg[0]
+		var b: Vector2 = seg[1]
+		var length := a.distance_to(b)
+		var dir := (b - a) / maxf(length, 0.01)
+		var side := Vector2(-dir.y, dir.x)
+		var t := 6.0
+		while t < length - 6.0:
+			t += rng.randf_range(3.0, 7.0)
+			if rng.randf() > 0.55:
+				continue
+			var off := side * rng.randf_range(2.6, 3.6) * (1.0 if rng.randf() < 0.5 else -1.0)
+			for k in rng.randi_range(1, 3):
+				var p := a + dir * (t + k * 0.9) + off + side * rng.randf_range(-0.3, 0.3)
+				if VeliciaTerrain.in_lake(p.x, p.y, 1.0) or VeliciaTerrain.in_flat_zone(p.x, p.y, -4.0):
+					continue
+				var bush := CuttableBush.new(rng.randi_range(0, 1))
+				bush.position = Vector3(p.x, VeliciaTerrain.height_at(p.x, p.y) - 0.05, p.y)
+				bush.rotation.y = rng.randf() * TAU
+				root.add_child(bush)
+
+
+## Bushes, grass tufts, flowers and mushrooms: dense, small, no collision.
+func _build_ground_cover() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = terrain_seed + 11
+	var half := region_size * 0.5 - 6.0
+	var density: float = {"low": 0.35, "medium": 0.7, "high": 1.0}.get(_quality, 0.7)
+	var kinds := {}
+	var count := int(region_size * region_size * 0.32 * density)
+	tuft_count = 0
+	for i in count:
+		var x := rng.randf_range(-half, half)
+		var z := rng.randf_range(-half, half)
+		var w := ground_weights(x, z)
+		if w.g > 0.3 or w.b > 0.4 or VeliciaTerrain.in_lake(x, z, 0.5):
+			continue
+		var on_path := w.r > 0.45
+		var r := rng.randf()
+		var kind := ""
+		if on_path:
+			if r < 0.04:
+				kind = "tuft%d" % (i % 3)
+			else:
+				continue
+		elif r < 0.78:
+			kind = "tuft%d" % (i % 3)
+		elif r < 0.9:
+			kind = "flower%d" % (i % 4)
+		elif r < 0.97 and not VeliciaTerrain.in_flat_zone(x, z, -2.0):
+			kind = "bush%d" % (i % 2)
+		elif r < 0.99:
+			kind = "mushroom"
+		else:
+			continue
+		var key := "%s|%d|%d" % [kind, floori(x / 30.0), floori(z / 30.0)]
+		if not kinds.has(key):
+			kinds[key] = []
+		var sc := rng.randf_range(0.8, 1.3) if not kind.begins_with("bush") else rng.randf_range(0.7, 1.4)
+		kinds[key].append([Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * sc), Vector3(x, VeliciaTerrain.height_at(x, z) - 0.02, z)), rng.randf()])
+		if kind.begins_with("tuft"):
+			tuft_count += 1
+	for key in kinds:
+		var kind := String(key).get_slice("|", 0)
+		var mesh: Mesh
+		if kind.begins_with("tuft"):
+			mesh = LowPoly.grass_tuft(int(kind.right(1)))
+		elif kind.begins_with("flower"):
+			mesh = LowPoly.flower(int(kind.right(1)))
+		elif kind.begins_with("bush"):
+			mesh = LowPoly.bush(int(kind.right(1)))
+		else:
+			mesh = LowPoly.mushroom()
+		_multimesh(mesh, null, kinds[key], Vector3.ZERO, 34.0 if not kind.begins_with("bush") else 55.0, Color.WHITE, kind.begins_with("tuft") or kind.begins_with("bush"))
 
 
 # --------------------------------------------------------- Structure kits
@@ -497,6 +578,8 @@ static func _relative_transform(node: Node3D, root: Node3D) -> Transform3D:
 
 
 func _ground(root: Node3D, local: Vector3) -> Vector3:
+	# Kits were laid out for a larger world; pull pieces in to fit the compact map.
+	local = Vector3(local.x * _kit_scale, local.y, local.z * _kit_scale)
 	var gx := root.position.x + local.x
 	var gz := root.position.z + local.z
 	return Vector3(local.x, VeliciaTerrain.height_at(gx, gz) - root.position.y + local.y, local.z)
@@ -577,8 +660,8 @@ func _kit_outpost(root: Node3D, lt: LocationTrigger) -> void:
 		if (deg > 255.0 and deg < 285.0) or (deg < 12.0 or deg > 348.0):
 			continue
 		var p := Vector3(cos(ang) * r, 0, sin(ang) * r)
-		var h := 3.2 + (i % 3) * 0.25
-		_column(root, 0.0 if i % 2 == 0 else 0.22, 0.26, h, _ground(root, p) + Vector3(0, h * 0.5 - 0.2, 0), log_mat, true, 5)
+		var h := 1.4 + (i % 3) * 0.2
+		_column(root, 0.0 if i % 4 == 0 else 0.2, 0.26, h, _ground(root, p) + Vector3(0, h * 0.5 - 0.2, 0), log_mat, true, 5)
 	# Watchtower
 	var tw := _ground(root, Vector3(-r + 3.0, 0, -r + 5.0))
 	for corner in [Vector3(-1, 0, -1), Vector3(1, 0, -1), Vector3(-1, 0, 1), Vector3(1, 0, 1)]:
@@ -654,12 +737,12 @@ func _kit_spire(root: Node3D) -> void:
 	# Ruined arches around the base.
 	for i in 6:
 		var ang := TAU * i / 6.0 + 0.3
-		var p := Vector3(cos(ang) * 11.0, 0, sin(ang) * 11.0)
+		var p := Vector3(cos(ang) * 13.0, 0, sin(ang) * 13.0)
 		var gp := _ground(root, p)
 		var tall := 4.5 if i % 3 != 0 else 2.0
 		_column(root, 0.55, 0.65, tall, gp + Vector3(0, tall * 0.5, 0), stone, true, 6)
 		if i % 2 == 0:
-			var p2 := Vector3(cos(ang + 0.35) * 11.0, 0, sin(ang + 0.35) * 11.0)
+			var p2 := Vector3(cos(ang + 0.35) * 13.0, 0, sin(ang + 0.35) * 13.0)
 			var gp2 := _ground(root, p2)
 			_column(root, 0.55, 0.65, 4.5, gp2 + Vector3(0, 2.25, 0), stone, true, 6)
 			var mid := (gp + gp2) * 0.5
@@ -708,18 +791,18 @@ func _kit_gyria_camp(root: Node3D) -> void:
 func _kit_fort(root: Node3D) -> void:
 	var stone := VeliciaMaterials.surface("stone_wall", Color(1.0, 0.97, 0.9), 0.3)
 	var dark := VeliciaMaterials.surface("stone_wall", Color(0.78, 0.76, 0.72), 0.3)
-	var r := 17.0
-	var segs := 20
+	var r := 17.0 * 0.78
+	var segs := 16
 	for i in segs:
 		var ang := TAU * (i + 0.5) / segs
-		if i == 5 or i == 6 or i == 14:
-			continue # breaches; i 5-6 face the approach from the outpost
-		var p := Vector3(cos(ang) * r, 0, sin(ang) * r)
-		var h := 5.5 if i % 4 != 2 else 3.0
+		if i == 4 or i == 5 or i == 11:
+			continue # breaches; i 4-5 face the approach from the outpost
+		var p := Vector3(cos(ang) * r / _kit_scale, 0, sin(ang) * r / _kit_scale)
+		var h := 3.6 if i % 4 != 2 else 2.0
 		var gp := _ground(root, p)
-		_solid(root, Vector3(5.6, h, 1.4), gp + Vector3(0, h * 0.5 - 0.3, 0), -ang + PI * 0.5, stone if i % 2 == 0 else dark)
+		_solid(root, Vector3(5.4, h, 1.2), gp + Vector3(0, h * 0.5 - 0.3, 0), -ang + PI * 0.5, stone if i % 2 == 0 else dark)
 	for ang in [0.6, 3.6]:
-		var p := Vector3(cos(ang) * r, 0, sin(ang) * r)
+		var p := Vector3(cos(ang) * r / _kit_scale, 0, sin(ang) * r / _kit_scale)
 		_column(root, 2.2, 2.6, 9.0, _ground(root, p) + Vector3(0, 4.3, 0), dark, true, 8)
 	# Broken central dais
 	_column(root, 4.0, 4.4, 0.5, Vector3(0, 0.1, 0), dark, true, 10)
@@ -804,7 +887,7 @@ func _kit_glade(root: Node3D) -> void:
 	var bark := VeliciaMaterials.surface("bark", Color.WHITE, 0.6, 0.95, false)
 	_column(root, 0.9, 1.5, 3.0, _ground(root, Vector3.ZERO) + Vector3(0, 1.2, 0), bark, true, 8)
 	var giant := MeshInstance3D.new()
-	giant.mesh = Vegetation.broadleaf(7)
+	giant.mesh = LowPoly.tree(7)
 	giant.position = _ground(root, Vector3.ZERO) - Vector3(0, 0.3, 0)
 	giant.scale = Vector3.ONE * 2.6
 	root.add_child(giant)

@@ -14,6 +14,7 @@ var dialogue: DialogueRunner
 
 var _root: Control
 var _health: ProgressBar
+var _hearts: HeartsDisplay
 var _stamina: ProgressBar
 var _level_label: Label
 var _companion_box: VBoxContainer
@@ -129,7 +130,7 @@ func _apply_touch_mode() -> void:
 	for c in [_prompt, _capture_button, _menu_button] + _ring_buttons:
 		(c as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE if on else Control.MOUSE_FILTER_STOP
 	_hint.visible = not on
-	_hint.text = "WASD move · Mouse/J light · K heavy · Q block (tap to parry) · C dodge · Space jump · Shift sprint\nE interact · Tab lock-on · R skill · G summon · F capture · V next ring · H command · 1 heal · Esc menu · Click to look"
+	_hint.text = "WASD move · J attack · K heavy (hold to charge) · Q shield (tap to parry) · C roll · R spin\nE talk · G summon ring creature · F bind creature · V next ring · H command · Tab lock-on · 1 heal · Esc menu"
 
 
 # ------------------------------------------------------------------ Build
@@ -137,17 +138,22 @@ func _apply_touch_mode() -> void:
 func _build_status() -> void:
 	var panel := PanelContainer.new()
 	panel.position = Vector2(14, 28)
-	panel.add_theme_stylebox_override("panel", UiTheme.panel_style(Color(0.05, 0.06, 0.08, 0.6), Color(0, 0, 0, 0)))
+	panel.add_theme_stylebox_override("panel", UiTheme.panel_style(Color(0, 0, 0, 0), Color(0, 0, 0, 0)))
 	_root.add_child(panel)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
 	panel.add_child(box)
-	_level_label = UiTheme.label("Emoria Warrior · Lv 1", 18, UiTheme.GOLD)
-	box.add_child(_level_label)
+	_hearts = HeartsDisplay.new()
+	box.add_child(_hearts)
 	_health = UiTheme.make_bar(UiTheme.HEALTH, 300, 20)
+	_health.visible = false
 	box.add_child(_health)
-	_stamina = UiTheme.make_bar(UiTheme.STAMINA, 240, 12)
+	_stamina = UiTheme.make_bar(UiTheme.STAMINA, 180, 8)
 	box.add_child(_stamina)
+	_level_label = UiTheme.label("Emoria Warrior · Lv 1", 16, UiTheme.GOLD)
+	_level_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	_level_label.add_theme_constant_override("outline_size", 6)
+	box.add_child(_level_label)
 	_skill_label = UiTheme.label("", 15, UiTheme.TEXT_DIM)
 	box.add_child(_skill_label)
 	_companion_box = VBoxContainer.new()
@@ -352,6 +358,7 @@ func _process(_delta: float) -> void:
 func _on_health(h: float, m: float) -> void:
 	_health.max_value = m
 	_health.value = h
+	_hearts.set_health(h, m)
 
 
 func _on_stamina(s: float, m: float) -> void:

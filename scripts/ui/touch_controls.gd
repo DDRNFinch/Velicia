@@ -1,8 +1,8 @@
 class_name TouchControls
 extends Control
 ## Two-thumb touch layout. Left thumb: floating joystick (push to the edge to
-## sprint). Right thumb: drag anywhere free to look; action buttons in an arc
-## at the bottom-right. Everything presses the same InputMap actions as the
+## sprint). Right thumb: action buttons in an arc at the bottom-right (the
+## camera is fixed, so there is no look control). Everything presses the same InputMap actions as the
 ## keyboard and gamepad, so gameplay code has a single input path.
 ## Multi-touch is handled here directly; HUD buttons register as touch
 ## targets so they work while another finger holds the joystick.
@@ -14,15 +14,14 @@ const SPRINT_THRESHOLD := 0.93
 ## id = InputMap action. pos = offset from the bottom-right corner (unscaled).
 const BUTTONS := [
 	{"id": "attack_light", "label": "ATTACK", "r": 66.0, "pos": Vector2(-120, -120)},
-	{"id": "attack_heavy", "label": "HEAVY", "r": 44.0, "pos": Vector2(-255, -80)},
-	{"id": "dodge", "label": "DODGE", "r": 44.0, "pos": Vector2(-95, -262)},
-	{"id": "block", "label": "BLOCK", "r": 44.0, "pos": Vector2(-235, -205)},
-	{"id": "jump", "label": "JUMP", "r": 36.0, "pos": Vector2(-360, -62)},
-	{"id": "skill", "label": "SKILL", "r": 36.0, "pos": Vector2(-362, -166)},
-	{"id": "summon", "label": "RING", "r": 38.0, "pos": Vector2(-190, -335)},
-	{"id": "companion_command", "label": "CMD", "r": 30.0, "pos": Vector2(-305, -290)},
-	{"id": "lock_on", "label": "LOCK", "r": 32.0, "pos": Vector2(-55, -380)},
-	{"id": "quick_heal", "label": "HEAL", "r": 30.0, "pos": Vector2(-462, -72)},
+	{"id": "dodge", "label": "ROLL", "r": 46.0, "pos": Vector2(-95, -262)},
+	{"id": "block", "label": "SHIELD", "r": 44.0, "pos": Vector2(-248, -92)},
+	{"id": "attack_heavy", "label": "HEAVY", "r": 40.0, "pos": Vector2(-236, -218)},
+	{"id": "summon", "label": "RING", "r": 42.0, "pos": Vector2(-178, -350)},
+	{"id": "skill", "label": "SPIN", "r": 34.0, "pos": Vector2(-370, -88)},
+	{"id": "companion_command", "label": "CMD", "r": 28.0, "pos": Vector2(-322, -300)},
+	{"id": "quick_heal", "label": "HEAL", "r": 28.0, "pos": Vector2(-382, -196)},
+	{"id": "lock_on", "label": "LOCK", "r": 30.0, "pos": Vector2(-50, -395)},
 ]
 
 var labels_override: Dictionary = {}
@@ -130,7 +129,7 @@ func _on_drag(index: int, pos: Vector2, relative: Vector2) -> void:
 		"stick":
 			_update_stick(pos)
 		"look":
-			get_tree().call_group("camera_rig", "add_look_input", relative)
+			pass
 		"button":
 			# Sliding off a button releases it; sliding onto another doesn't press.
 			var id: String = _fingers[index].id

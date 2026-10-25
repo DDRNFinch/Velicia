@@ -97,22 +97,12 @@ var _time := 0.0
 var _base_weapon_rot := Vector3(-0.9, 0, 0)
 var _weapon_len := 0.9
 var trail: WeaponTrail
-## Realistic skinned model (CharacterModel) when one exists for this people;
-## the pivots above then drive its bones and only weapons stay primitive.
-var model: CharacterModel
-var _model_meshes: Array[MeshInstance3D] = []
-var _suppress := false
-var _bones: Dictionary = {}
-var _hips_rest := Vector3.ZERO
 
-## Set false (e.g. by a "Character models" setting) to use primitive bodies.
-static var use_models := true
 
 
 # ------------------------------------------------------------- Mesh cache
 
-## Cached material. `detail` names a texture set in res://textures (skin,
-## fabric, leather, metal, fur, planks, bark) projected in object space.
+## Cached flat-colour material (`detail` only affects metal's sheen now).
 static func mat(color: Color, roughness: float = 0.85, emission: float = 0.0, alpha: float = 1.0, detail: String = "", detail_scale: float = 3.0) -> StandardMaterial3D:
 	var key := "%s|%.2f|%.2f|%.2f|%s|%.1f" % [color.to_html(), roughness, emission, alpha, detail, detail_scale]
 	if _mat_cache.has(key):
@@ -140,44 +130,58 @@ static func mat(color: Color, roughness: float = 0.85, emission: float = 0.0, al
 	if alpha < 1.0:
 		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	elif emission <= 0.0:
+		# Soft rim light makes figures pop against the ground from above.
+		m.rim_enabled = true
+		m.rim = 0.22
+		m.rim_tint = 0.5
 	_mat_cache[key] = m
 	return m
 
 
-static func box_mesh(size: Vector3) -> BoxMesh:
+## Lifts dark, muddy preset colours into the brighter, saturated palette of
+## the low-poly style (they were tuned for the old realistic lighting).
+static func _tone(c: Color, lift: float = 0.16) -> Color:
+	var h := c.h
+	var sat := clampf(c.s * 1.15 + 0.04, 0.0, 1.0)
+	var v := clampf(c.v + lift + (0.12 if c.v < 0.3 else 0.0), 0.0, 1.0)
+	return Color.from_hsv(h, sat, v)
+
+
+static func box_mesh(size: Vector3) -> Mesh:
 	var key := "box%.3v" % size
 	if not _mesh_cache.has(key):
 		var m := BoxMesh.new()
 		m.size = size
-		_mesh_cache[key] = m
+		_mesh_cache[key] = LowPoly.flat(m)
 	return _mesh_cache[key]
 
 
-static func capsule_mesh(radius: float, h: float) -> CapsuleMesh:
+static func capsule_mesh(radius: float, h: float) -> Mesh:
 	var key := "cap%.3f_%.3f" % [radius, h]
 	if not _mesh_cache.has(key):
 		var m := CapsuleMesh.new()
 		m.radius = radius
 		m.height = maxf(h, radius * 2.0 + 0.01)
-		m.radial_segments = 8
+		m.radial_segments = 7
 		m.rings = 2
-		_mesh_cache[key] = m
+		_mesh_cache[key] = LowPoly.flat(m)
 	return _mesh_cache[key]
 
 
-static func sphere_mesh(radius: float) -> SphereMesh:
+static func sphere_mesh(radius: float) -> Mesh:
 	var key := "sph%.3f" % radius
 	if not _mesh_cache.has(key):
 		var m := SphereMesh.new()
 		m.radius = radius
 		m.height = radius * 2.0
-		m.radial_segments = 12
-		m.rings = 6
-		_mesh_cache[key] = m
+		m.radial_segments = 9
+		m.rings = 5
+		_mesh_cache[key] = LowPoly.flat(m)
 	return _mesh_cache[key]
 
 
-static func cylinder_mesh(top: float, bottom: float, h: float, sides: int = 8) -> CylinderMesh:
+static func cylinder_mesh(top: float, bottom: float, h: float, sides: int = 8) -> Mesh:
 	var key := "cyl%.3f_%.3f_%.3f_%d" % [top, bottom, h, sides]
 	if not _mesh_cache.has(key):
 		var m := CylinderMesh.new()
@@ -186,13 +190,11 @@ static func cylinder_mesh(top: float, bottom: float, h: float, sides: int = 8) -
 		m.height = h
 		m.radial_segments = sides
 		m.rings = 1
-		_mesh_cache[key] = m
+		_mesh_cache[key] = LowPoly.flat(m)
 	return _mesh_cache[key]
 
 
 func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3, rot: Vector3 = Vector3.ZERO, scl: Vector3 = Vector3.ONE) -> MeshInstance3D:
-	if _suppress:
-		return null
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
 	mi.material_override = material
@@ -224,36 +226,31 @@ func build(new_params: Dictionary) -> void:
 		c.queue_free()
 	_meshes.clear()
 	_weapon_meshes.clear()
-	_model_meshes.clear()
 	tail_segments.clear()
-	model = null
-	var model_name := model_name_for(params)
-	var realistic := use_models and CharacterModel.exists(model_name)
-	if realistic:
-		# Proportions come from the model so the pivots line up with its joints.
-		params.height = float(CharacterModel.load_info(model_name).get("height", params.height))
 
 	height = params.height
-	var s: float = params.shoulder
-	var limb: float = params.limb
-	var skin := mat(params.skin, 0.55 if params.skin_detail == "scales" else 0.62, 0.0, 1.0, params.skin_detail, 2.0 if params.skin_detail == "skin" else 5.0)
-	var cloth := mat(params.cloth, 0.9, 0.0, 1.0, "fabric", 4.0)
-	var armor := mat(params.armor, 0.6, 0.0, 1.0, "leather", 3.0)
-	var plate := mat(Color(params.armor).lightened(0.25), 0.35, 0.0, 1.0, "metal", 2.0)
-	var accent := mat(params.accent, 0.4, 0.0, 1.0, "metal", 3.0)
-	var hair := mat(params.hair, 0.8, 0.0, 1.0, "fur", 5.0)
+	# Chunky, toy-like limbs and slightly broader shoulders for the chibi look.
+	var s: float = params.shoulder * 1.1
+	var limb: float = params.limb * 1.5
+	var skin := mat(_tone(params.skin, 0.06), 0.55 if params.skin_detail == "scales" else 0.62)
+	var cloth := mat(_tone(params.cloth), 0.9)
+	var armor := mat(_tone(params.armor), 0.6)
+	var plate := mat(_tone(Color(params.armor).lightened(0.25)), 0.35, 0.0, 1.0, "metal")
+	var accent := mat(_tone(params.accent), 0.4, 0.0, 1.0, "metal")
+	var hair := mat(_tone(params.hair, 0.08), 0.8)
 	var dark := mat(Color(0.08, 0.06, 0.06), 0.5)
 
-	head_r = height * 0.062 * float(params.head_scale)
-	leg_len = height * 0.47 * float(params.leg_mult)
+	# Chibi proportions (big heads, short legs) so faces and each people's
+	# features read clearly from the high, angled camera.
+	head_r = height * 0.112 * float(params.head_scale)
+	leg_len = height * 0.36 * float(params.leg_mult)
 	var neck := height * 0.025
 	torso_len = height - leg_len - neck - head_r * 2.0
-	arm_len = height * 0.37 * float(params.arm_mult)
+	arm_len = height * 0.3 * float(params.arm_mult)
 
 	hips = _pivot(self, Vector3(0, leg_len, 0), "Hips")
 	spine = _pivot(hips, Vector3.ZERO, "Spine")
 
-	_suppress = realistic
 	# Torso
 	var depth: float = s * 0.55 * float(params.depth)
 	var round_mesh := sphere_mesh(0.5)
@@ -273,7 +270,7 @@ func build(new_params: Dictionary) -> void:
 			_part(spine, sphere_mesh(0.5), plate, Vector3(side * s * 0.52, torso_len * 0.98, 0), Vector3(0, 0, side * -0.3), Vector3(s * 0.42, torso_len * 0.22, depth * 1.05))
 	if params.has_cloak:
 		var cloak_len := torso_len * 0.9 + leg_len * 0.65
-		_part(spine, box_mesh(Vector3(s * 0.82, cloak_len, 0.03)), mat(params.cloak, 0.9, 0.0, 1.0, "fabric", 4.0), Vector3(0, torso_len * 0.95 - cloak_len * 0.5, depth * 0.55), Vector3(-0.06, 0, 0))
+		_part(spine, box_mesh(Vector3(s * 0.82, cloak_len, 0.03)), mat(_tone(params.cloak), 0.9), Vector3(0, torso_len * 0.95 - cloak_len * 0.5, depth * 0.55), Vector3(-0.06, 0, 0))
 	if params.mantle:
 		# Vapouriun: translucent layered mist-mantle over the shoulders.
 		var mist: Color = params.accent.lerp(Color(0.85, 0.95, 1.0), 0.5)
@@ -298,19 +295,24 @@ func build(new_params: Dictionary) -> void:
 	_part(head, box_mesh(Vector3(head_r * 0.24 * ns, head_r * 0.42 * ns, head_r * 0.28 * ns)), skin, Vector3(0, head_r * 0.95, -head_r * 0.98), Vector3(-0.25, 0, 0))
 	# Eyes and mouth
 	for side in [-1.0, 1.0]:
-		_part(head, sphere_mesh(head_r * 0.12 * float(params.eye_scale)), dark, Vector3(side * head_r * 0.36, head_r * 1.18, -head_r * 0.86))
+		# Big, bright stylised eyes: a white disc with a dark pupil and a glint.
+		var es := float(params.eye_scale)
+		var eye_pos := Vector3(side * head_r * 0.38, head_r * 1.12, -head_r * 0.84)
+		_part(head, sphere_mesh(head_r * 0.2 * es), mat(Color(0.97, 0.96, 0.92), 0.3), eye_pos, Vector3.ZERO, Vector3(0.85, 1.0, 0.45))
+		_part(head, sphere_mesh(head_r * 0.13 * es), dark, eye_pos + Vector3(0, -head_r * 0.01, -head_r * 0.07), Vector3.ZERO, Vector3(0.85, 1.0, 0.5))
+		_part(head, sphere_mesh(head_r * 0.04 * es), mat(Color.WHITE, 0.2, 1.5), eye_pos + Vector3(side * head_r * 0.04, head_r * 0.05, -head_r * 0.13))
 	_part(head, box_mesh(Vector3(head_r * 0.5, head_r * 0.06, head_r * 0.05)), mat(Color(0.45, 0.2, 0.18)), Vector3(0, head_r * 0.58, -head_r * 0.98))
 	if params.heavy_brow:
 		_part(head, box_mesh(Vector3(head_r * 1.35, head_r * 0.22, head_r * 0.35)), skin, Vector3(0, head_r * 1.38, -head_r * 0.82))
 	# Ears. Amir and Burrok keep human faces; only the ears are animal.
-	var fur_mat := mat(params.fur, 0.95, 0.0, 1.0, "fur", 4.0)
+	var fur_mat := mat(_tone(params.fur, 0.1), 0.95)
 	for side in [-1.0, 1.0]:
 		if params.ears == &"wolf":
 			_part(head, cylinder_mesh(0.0, head_r * 0.3, head_r * 0.85, 4), fur_mat, Vector3(side * head_r * 0.55, head_r * 2.15, head_r * 0.05), Vector3(0.1, PI * 0.25, side * -0.28), Vector3(1, 1, 0.45))
-			_part(head, cylinder_mesh(0.0, head_r * 0.16, head_r * 0.55, 4), mat(Color(params.fur).lightened(0.3), 0.95), Vector3(side * head_r * 0.55, head_r * 2.08, -head_r * 0.03), Vector3(0.1, PI * 0.25, side * -0.28), Vector3(1, 1, 0.3))
+			_part(head, cylinder_mesh(0.0, head_r * 0.16, head_r * 0.55, 4), mat(_tone(Color(params.fur).lightened(0.3), 0.1), 0.95), Vector3(side * head_r * 0.55, head_r * 2.08, -head_r * 0.03), Vector3(0.1, PI * 0.25, side * -0.28), Vector3(1, 1, 0.3))
 		elif params.ears == &"bear":
 			_part(head, sphere_mesh(head_r * 0.34), fur_mat, Vector3(side * head_r * 0.78, head_r * 2.0, head_r * 0.05), Vector3(0, 0, side * -0.35), Vector3(1, 1, 0.55))
-			_part(head, sphere_mesh(head_r * 0.2), mat(Color(params.fur).darkened(0.35), 0.95), Vector3(side * head_r * 0.78, head_r * 2.0, -head_r * 0.08), Vector3(0, 0, side * -0.35), Vector3(1, 1, 0.4))
+			_part(head, sphere_mesh(head_r * 0.2), mat(_tone(Color(params.fur).darkened(0.35), 0.1), 0.95), Vector3(side * head_r * 0.78, head_r * 2.0, -head_r * 0.08), Vector3(0, 0, side * -0.35), Vector3(1, 1, 0.4))
 		elif params.ears == &"fin":
 			_part(head, cylinder_mesh(0.0, head_r * 0.4, head_r * 1.1, 4), skin, Vector3(side * head_r * 1.05, head_r * 1.2, head_r * 0.35), Vector3(-0.9, 0, side * -1.1), Vector3(1, 1, 0.18))
 		elif params.pointed_ears:
@@ -335,7 +337,7 @@ func build(new_params: Dictionary) -> void:
 	else:
 		_build_hair(params.hair_style, hair)
 	if params.fin_crest:
-		var fin := mat(Color(params.skin).lightened(0.15), 0.4, 0.0, 1.0, "scales", 5.0)
+		var fin := mat(_tone(Color(params.skin).lightened(0.15), 0.06), 0.4)
 		for i in 3:
 			_part(head, cylinder_mesh(0.0, head_r * 0.35, head_r * (0.9 - 0.15 * i), 4), fin, Vector3(0, head_r * (2.0 - 0.18 * i), head_r * (-0.15 + 0.45 * i)), Vector3(-0.35 - 0.25 * i, 0, 0), Vector3(0.15, 1, 1))
 	if params.crest:
@@ -343,7 +345,7 @@ func build(new_params: Dictionary) -> void:
 			_part(head, cylinder_mesh(0.0, head_r * 0.12, head_r * 0.6, 4), armor, Vector3(0, head_r * 2.0, head_r * (-0.4 + 0.4 * i)), Vector3(-0.3, 0, 0))
 
 	# Arms
-	var arm_mat := mat(params.fur, 0.95, 0.0, 1.0, "fur", 4.0) if params.arm_fur else skin
+	var arm_mat := mat(_tone(params.fur, 0.1), 0.95) if params.arm_fur else skin
 	var sleeve := cloth
 	for side in [-1.0, 1.0]:
 		var shoulder := _pivot(spine, Vector3(side * (s * 0.5 + limb * 0.7), torso_len * 0.88, 0), "ArmR" if side > 0 else "ArmL")
@@ -381,7 +383,7 @@ func build(new_params: Dictionary) -> void:
 	# Legs
 	for side in [-1.0, 1.0]:
 		var leg := _pivot(hips, Vector3(side * s * 0.24, 0, 0), "LegR" if side > 0 else "LegL")
-		_part(leg, capsule_mesh(limb * 1.3, leg_len * 0.98), cloth if not params.arm_fur else mat(params.cloth.darkened(0.2)), Vector3(0, -leg_len * 0.5, 0))
+		_part(leg, capsule_mesh(limb * 1.3, leg_len * 0.98), cloth if not params.arm_fur else mat(_tone(params.cloth.darkened(0.2))), Vector3(0, -leg_len * 0.5, 0))
 		_part(leg, sphere_mesh(0.5), mat(Color(0.3, 0.21, 0.14), 0.7, 0.0, 1.0, "leather", 3.0), Vector3(0, -leg_len + height * 0.025, -limb * 0.9), Vector3.ZERO, Vector3(limb * 2.5, height * 0.06, limb * 4.4))
 		_part(leg, cylinder_mesh(limb * 1.45, limb * 1.3, leg_len * 0.32, 10), mat(Color(0.3, 0.21, 0.14), 0.7, 0.0, 1.0, "leather", 3.0), Vector3(0, -leg_len * 0.82, 0))
 		if side > 0:
@@ -390,17 +392,13 @@ func build(new_params: Dictionary) -> void:
 			leg_l = leg
 
 	if params.tail:
-		_build_tail(s, mat(params.fur, 0.95))
-	_suppress = false
-	if realistic:
-		_attach_model(model_name)
+		_build_tail(s, mat(_tone(params.fur, 0.1), 0.95))
 	_build_weapon(params.weapon, weapon_pivot)
 	if params.dual_wield:
 		_build_weapon(params.weapon, offhand_pivot)
 	if params.shield:
 		_build_shield()
 	_merge_parts()
-	_meshes.append_array(_model_meshes)
 	trail = WeaponTrail.new()
 	add_child(trail)
 
@@ -506,7 +504,7 @@ func _build_tail(s: float, fur: Material) -> void:
 		var next := _pivot(parent, Vector3(0, 0, seg_len), "TailSeg%d" % i)
 		next.rotation.x = 0.12
 		parent = next
-	_part(parent, sphere_mesh(height * 0.022), mat(Color(params.fur).lightened(0.35)), Vector3.ZERO)
+	_part(parent, sphere_mesh(height * 0.022), mat(_tone(Color(params.fur).lightened(0.35), 0.1)), Vector3.ZERO)
 
 
 func _build_weapon(kind: StringName, pivot: Node3D) -> void:
@@ -594,10 +592,7 @@ func set_weapon(kind: StringName) -> void:
 	_build_weapon(kind, weapon_pivot)
 	if params.dual_wield:
 		_build_weapon(kind, offhand_pivot)
-	for mm in _model_meshes:
-		_meshes.erase(mm)
 	_merge_parts()
-	_meshes.append_array(_model_meshes)
 
 
 # -------------------------------------------------------------- Animation
@@ -655,8 +650,6 @@ func animate(delta: float, speed: float, run_speed: float, on_floor: bool) -> vo
 		seg.rotation.y = sin(_walk_phase * 0.5 + _time * 1.5 + i * 0.7) * (0.12 + 0.12 * f)
 		if i == 0:
 			seg.rotation.x = lerpf(0.75, 0.25, minf(f, 1.0))
-	if model:
-		_drive_model(f)
 
 	if _flash_time > 0.0:
 		_flash_time -= delta
@@ -799,95 +792,6 @@ func get_weapon_tip() -> Vector3:
 
 func get_hand_position() -> Vector3:
 	return hand_r_anchor.global_position if hand_r_anchor else global_position + Vector3.UP
-
-
-# ---------------------------------------------------------- Realistic model
-
-## Which models/characters/<name>.glb a body uses.
-static func model_name_for(p: Dictionary) -> StringName:
-	if p.has("model"):
-		return p.model
-	var people: StringName = p.get("people", &"human")
-	match people:
-		&"human":
-			if p.get("female", false):
-				return &"human_female"
-			var sh: float = p.get("shoulder", 0.46)
-			return &"human_lean" if sh < 0.44 else (&"human_broad" if sh > 0.5 else &"human")
-		&"gyria":
-			return &"gyria_boss" if float(p.get("height", 1.86)) > 2.2 else &"gyria"
-	return people
-
-
-func _attach_model(model_name: StringName) -> void:
-	model = CharacterModel.create(model_name, params)
-	add_child(model)
-	for mi in model.parts.values():
-		_model_meshes.append(mi)
-	for b in ["Hips", "Spine", "Chest", "Neck", "Head", "UpperArm_L", "UpperArm_R", "LowerArm_L", "LowerArm_R",
-			"Hand_L", "Hand_R", "UpperLeg_L", "UpperLeg_R", "LowerLeg_L", "LowerLeg_R", "Foot_L", "Foot_R",
-			"Clavicle_L", "Clavicle_R", "Tail0", "Tail1", "Tail2", "Tail3", "Tail4"]:
-		_bones[b] = model.bone(b)
-	# Move the animation pivots onto the model's joints.
-	var rp := func(b: String) -> Vector3: return model.bone_rest_position(b)
-	_hips_rest = rp.call("Hips")
-	hips.position = _hips_rest
-	leg_len = _hips_rest.y
-	spine.position = rp.call("Spine") - _hips_rest
-	var spine_g: Vector3 = rp.call("Spine")
-	head.position = rp.call("Neck") - spine_g
-	head_r = maxf(0.08, (model.head_center.y - rp.call("Neck").y) * 0.55)
-	for sd in ["L", "R"]:
-		var shoulder: Node3D = arm_l if sd == "L" else arm_r
-		var elbow: Node3D = forearm_l if sd == "L" else forearm_r
-		var leg: Node3D = leg_l if sd == "L" else leg_r
-		var ua: Vector3 = rp.call("UpperArm_" + sd)
-		var la: Vector3 = rp.call("LowerArm_" + sd)
-		var hd: Vector3 = rp.call("Hand_" + sd)
-		shoulder.position = ua - spine_g
-		elbow.position = la - ua
-		var hand_pivot: Node3D = elbow.get_child(elbow.get_child_count() - 1) if elbow.get_child_count() > 0 else null
-		for c in elbow.get_children():
-			if c.name == "Hand":
-				hand_pivot = c
-		if hand_pivot:
-			# Grip sits in the palm, a little past the wrist.
-			hand_pivot.position = hd - la + (hd - la).normalized() * 0.07 * height / 1.78
-		leg.position = rp.call("UpperLeg_" + sd) - _hips_rest
-	arm_len = (rp.call("Hand_R") - rp.call("UpperArm_R")).length()
-	if tail_segments.size() > 0 and _bones.get("Tail0", -1) >= 0:
-		tail_segments[0].position = rp.call("Tail0") - _hips_rest
-
-
-func _q(v: Vector3, k: float = 1.0) -> Quaternion:
-	return Quaternion.from_euler(v * k)
-
-
-func _drive_model(f: float) -> void:
-	var m := model
-	m.set_bone_rotation(_bones.Hips, _q(hips.rotation))
-	if _bones.Hips >= 0:
-		m.skeleton.set_bone_pose_position(_bones.Hips, _hips_rest + (hips.position - _hips_rest))
-	m.set_bone_rotation(_bones.Spine, _q(spine.rotation, 0.5))
-	m.set_bone_rotation(_bones.Chest, _q(spine.rotation, 0.5))
-	m.set_bone_rotation(_bones.Neck, _q(head.rotation, 0.4))
-	m.set_bone_rotation(_bones.Head, _q(head.rotation, 0.6))
-	for sd in ["L", "R"]:
-		var arm: Node3D = arm_l if sd == "L" else arm_r
-		var fore: Node3D = forearm_l if sd == "L" else forearm_r
-		var leg: Node3D = leg_l if sd == "L" else leg_r
-		m.set_bone_rotation(_bones["UpperArm_" + sd], _q(arm.rotation))
-		m.set_bone_rotation(_bones["LowerArm_" + sd], _q(fore.rotation))
-		# Raised arms lift the collarbone a little so the shoulder doesn't crumple.
-		var lift := clampf(arm.rotation.x - 1.2, 0.0, 1.6) * 0.18
-		m.set_bone_rotation(_bones["Clavicle_" + sd], _q(Vector3(0, 0, lift * (1.0 if sd == "R" else -1.0))))
-		m.set_bone_rotation(_bones["UpperLeg_" + sd], _q(leg.rotation))
-		# Knees bend as the leg swings forward; feet stay roughly level.
-		var knee := -(maxf(0.0, leg.rotation.x) * 1.15 + 0.06 * f)
-		m.set_bone_rotation(_bones["LowerLeg_" + sd], _q(Vector3(knee, 0, 0)))
-		m.set_bone_rotation(_bones["Foot_" + sd], _q(Vector3(-(leg.rotation.x + knee) * 0.6, 0, 0)))
-	for i in mini(tail_segments.size(), 5):
-		m.set_bone_rotation(_bones["Tail%d" % i], _q(tail_segments[i].rotation))
 
 
 # ---------------------------------------------------------------- Presets
