@@ -19,9 +19,13 @@ models must match it. All
 designs are original to Velicia and must not copy protected characters or
 distinctive designs from existing franchises.
 
-The current in-game models are **procedural placeholders** built in
-`scripts/core/placeholder_body.gd` (`PlaceholderBody.preset()`), which encodes
-the proportions below so silhouettes already read correctly in play.
+The current in-game characters are **realistic skinned models** built by
+`tools/build_characters.py` from the CC0 MakeHuman base mesh (one model per
+people, plus human body variants), with clothing, hair, beards, wolf/bear
+ears, claws, paws, fins, tusks and tails generated to this spec. They are a
+solid first pass, not final art: hand-made models and real hair/cloth should
+replace them in art production. Proportions and features per people live in
+`CHARACTERS` in that script and `PlaceholderBody.preset()`.
 
 ---
 

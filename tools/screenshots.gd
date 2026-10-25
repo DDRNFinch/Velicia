@@ -64,9 +64,10 @@ func _shoot_game() -> void:
 	add_child(game)
 	await _frames(40)
 	var player: Player = game.player
-	# Keep the camera subject alive for the whole tour.
-	player.stats.max_health = 100000.0
-	player.stats.set_health(100000.0)
+	# Keep the camera subject alive for the whole tour (survives stat refreshes).
+	GameState.player.attributes["vitality"] = 10000
+	player.refresh_stats()
+	player.stats.set_health(player.stats.max_health)
 	var rig: CameraRig = game.camera_rig
 	await _snap("03_outpost_spawn")
 	_report_render_stats("outpost")
@@ -175,6 +176,9 @@ func _shoot_game() -> void:
 
 	# Boss
 	var boss: Enemy = game.region.get_node("Enemies/Warchief")
+	# Level-ups during the tour reset max health; keep the subject alive.
+	player.stats.max_health = 100000.0
+	player.stats.set_health(100000.0)
 	player.global_position = boss.global_position + Vector3(0, 0.5, 7.0)
 	player.rotation.y = 0.0
 	rig.yaw_node.rotation.y = 0.0

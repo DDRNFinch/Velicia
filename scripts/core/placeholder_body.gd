@@ -97,6 +97,16 @@ var _time := 0.0
 var _base_weapon_rot := Vector3(-0.9, 0, 0)
 var _weapon_len := 0.9
 var trail: WeaponTrail
+## Realistic skinned model (CharacterModel) when one exists for this people;
+## the pivots above then drive its bones and only weapons stay primitive.
+var model: CharacterModel
+var _model_meshes: Array[MeshInstance3D] = []
+var _suppress := false
+var _bones: Dictionary = {}
+var _hips_rest := Vector3.ZERO
+
+## Set false (e.g. by a "Character models" setting) to use primitive bodies.
+static var use_models := true
 
 
 # ------------------------------------------------------------- Mesh cache
@@ -181,6 +191,8 @@ static func cylinder_mesh(top: float, bottom: float, h: float, sides: int = 8) -
 
 
 func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3, rot: Vector3 = Vector3.ZERO, scl: Vector3 = Vector3.ONE) -> MeshInstance3D:
+	if _suppress:
+		return null
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
 	mi.material_override = material
@@ -212,7 +224,14 @@ func build(new_params: Dictionary) -> void:
 		c.queue_free()
 	_meshes.clear()
 	_weapon_meshes.clear()
+	_model_meshes.clear()
 	tail_segments.clear()
+	model = null
+	var model_name := model_name_for(params)
+	var realistic := use_models and CharacterModel.exists(model_name)
+	if realistic:
+		# Proportions come from the model so the pivots line up with its joints.
+		params.height = float(CharacterModel.load_info(model_name).get("height", params.height))
 
 	height = params.height
 	var s: float = params.shoulder
@@ -234,6 +253,7 @@ func build(new_params: Dictionary) -> void:
 	hips = _pivot(self, Vector3(0, leg_len, 0), "Hips")
 	spine = _pivot(hips, Vector3.ZERO, "Spine")
 
+	_suppress = realistic
 	# Torso
 	var depth: float = s * 0.55 * float(params.depth)
 	var round_mesh := sphere_mesh(0.5)
@@ -371,12 +391,16 @@ func build(new_params: Dictionary) -> void:
 
 	if params.tail:
 		_build_tail(s, mat(params.fur, 0.95))
+	_suppress = false
+	if realistic:
+		_attach_model(model_name)
 	_build_weapon(params.weapon, weapon_pivot)
 	if params.dual_wield:
 		_build_weapon(params.weapon, offhand_pivot)
 	if params.shield:
 		_build_shield()
 	_merge_parts()
+	_meshes.append_array(_model_meshes)
 	trail = WeaponTrail.new()
 	add_child(trail)
 
@@ -570,7 +594,10 @@ func set_weapon(kind: StringName) -> void:
 	_build_weapon(kind, weapon_pivot)
 	if params.dual_wield:
 		_build_weapon(kind, offhand_pivot)
+	for mm in _model_meshes:
+		_meshes.erase(mm)
 	_merge_parts()
+	_meshes.append_array(_model_meshes)
 
 
 # -------------------------------------------------------------- Animation
@@ -628,6 +655,8 @@ func animate(delta: float, speed: float, run_speed: float, on_floor: bool) -> vo
 		seg.rotation.y = sin(_walk_phase * 0.5 + _time * 1.5 + i * 0.7) * (0.12 + 0.12 * f)
 		if i == 0:
 			seg.rotation.x = lerpf(0.75, 0.25, minf(f, 1.0))
+	if model:
+		_drive_model(f)
 
 	if _flash_time > 0.0:
 		_flash_time -= delta
@@ -772,6 +801,95 @@ func get_hand_position() -> Vector3:
 	return hand_r_anchor.global_position if hand_r_anchor else global_position + Vector3.UP
 
 
+# ---------------------------------------------------------- Realistic model
+
+## Which models/characters/<name>.glb a body uses.
+static func model_name_for(p: Dictionary) -> StringName:
+	if p.has("model"):
+		return p.model
+	var people: StringName = p.get("people", &"human")
+	match people:
+		&"human":
+			if p.get("female", false):
+				return &"human_female"
+			var sh: float = p.get("shoulder", 0.46)
+			return &"human_lean" if sh < 0.44 else (&"human_broad" if sh > 0.5 else &"human")
+		&"gyria":
+			return &"gyria_boss" if float(p.get("height", 1.86)) > 2.2 else &"gyria"
+	return people
+
+
+func _attach_model(model_name: StringName) -> void:
+	model = CharacterModel.create(model_name, params)
+	add_child(model)
+	for mi in model.parts.values():
+		_model_meshes.append(mi)
+	for b in ["Hips", "Spine", "Chest", "Neck", "Head", "UpperArm_L", "UpperArm_R", "LowerArm_L", "LowerArm_R",
+			"Hand_L", "Hand_R", "UpperLeg_L", "UpperLeg_R", "LowerLeg_L", "LowerLeg_R", "Foot_L", "Foot_R",
+			"Clavicle_L", "Clavicle_R", "Tail0", "Tail1", "Tail2", "Tail3", "Tail4"]:
+		_bones[b] = model.bone(b)
+	# Move the animation pivots onto the model's joints.
+	var rp := func(b: String) -> Vector3: return model.bone_rest_position(b)
+	_hips_rest = rp.call("Hips")
+	hips.position = _hips_rest
+	leg_len = _hips_rest.y
+	spine.position = rp.call("Spine") - _hips_rest
+	var spine_g: Vector3 = rp.call("Spine")
+	head.position = rp.call("Neck") - spine_g
+	head_r = maxf(0.08, (model.head_center.y - rp.call("Neck").y) * 0.55)
+	for sd in ["L", "R"]:
+		var shoulder: Node3D = arm_l if sd == "L" else arm_r
+		var elbow: Node3D = forearm_l if sd == "L" else forearm_r
+		var leg: Node3D = leg_l if sd == "L" else leg_r
+		var ua: Vector3 = rp.call("UpperArm_" + sd)
+		var la: Vector3 = rp.call("LowerArm_" + sd)
+		var hd: Vector3 = rp.call("Hand_" + sd)
+		shoulder.position = ua - spine_g
+		elbow.position = la - ua
+		var hand_pivot: Node3D = elbow.get_child(elbow.get_child_count() - 1) if elbow.get_child_count() > 0 else null
+		for c in elbow.get_children():
+			if c.name == "Hand":
+				hand_pivot = c
+		if hand_pivot:
+			# Grip sits in the palm, a little past the wrist.
+			hand_pivot.position = hd - la + (hd - la).normalized() * 0.07 * height / 1.78
+		leg.position = rp.call("UpperLeg_" + sd) - _hips_rest
+	arm_len = (rp.call("Hand_R") - rp.call("UpperArm_R")).length()
+	if tail_segments.size() > 0 and _bones.get("Tail0", -1) >= 0:
+		tail_segments[0].position = rp.call("Tail0") - _hips_rest
+
+
+func _q(v: Vector3, k: float = 1.0) -> Quaternion:
+	return Quaternion.from_euler(v * k)
+
+
+func _drive_model(f: float) -> void:
+	var m := model
+	m.set_bone_rotation(_bones.Hips, _q(hips.rotation))
+	if _bones.Hips >= 0:
+		m.skeleton.set_bone_pose_position(_bones.Hips, _hips_rest + (hips.position - _hips_rest))
+	m.set_bone_rotation(_bones.Spine, _q(spine.rotation, 0.5))
+	m.set_bone_rotation(_bones.Chest, _q(spine.rotation, 0.5))
+	m.set_bone_rotation(_bones.Neck, _q(head.rotation, 0.4))
+	m.set_bone_rotation(_bones.Head, _q(head.rotation, 0.6))
+	for sd in ["L", "R"]:
+		var arm: Node3D = arm_l if sd == "L" else arm_r
+		var fore: Node3D = forearm_l if sd == "L" else forearm_r
+		var leg: Node3D = leg_l if sd == "L" else leg_r
+		m.set_bone_rotation(_bones["UpperArm_" + sd], _q(arm.rotation))
+		m.set_bone_rotation(_bones["LowerArm_" + sd], _q(fore.rotation))
+		# Raised arms lift the collarbone a little so the shoulder doesn't crumple.
+		var lift := clampf(arm.rotation.x - 1.2, 0.0, 1.6) * 0.18
+		m.set_bone_rotation(_bones["Clavicle_" + sd], _q(Vector3(0, 0, lift * (1.0 if sd == "R" else -1.0))))
+		m.set_bone_rotation(_bones["UpperLeg_" + sd], _q(leg.rotation))
+		# Knees bend as the leg swings forward; feet stay roughly level.
+		var knee := -(maxf(0.0, leg.rotation.x) * 1.15 + 0.06 * f)
+		m.set_bone_rotation(_bones["LowerLeg_" + sd], _q(Vector3(knee, 0, 0)))
+		m.set_bone_rotation(_bones["Foot_" + sd], _q(Vector3(-(leg.rotation.x + knee) * 0.6, 0, 0)))
+	for i in mini(tail_segments.size(), 5):
+		m.set_bone_rotation(_bones["Tail%d" % i], _q(tail_segments[i].rotation))
+
+
 # ---------------------------------------------------------------- Presets
 
 ## Base look for each canon people. Variant shifts colours for variety.
@@ -782,7 +900,7 @@ static func preset(people: StringName, variant: int = 0) -> Dictionary:
 			return {
 				"people": people, "height": 1.8, "shoulder": 0.42, "limb": 0.055,
 				"skin": Color(0.72, 0.56, 0.44).darkened(v * 0.06), "fur": Color(0.48, 0.42, 0.36).darkened(v * 0.08),
-				"cloth": Color(0.36, 0.3, 0.22), "armor": Color(0.5, 0.4, 0.28), "accent": Color(0.75, 0.62, 0.35),
+				"cloth": Color(0.36, 0.3, 0.22), "armor": Color(0.34, 0.25, 0.17), "accent": Color(0.75, 0.62, 0.35),
 				"hair": Color(0.32, 0.28, 0.24), "hair_style": &"mane", "tail": true, "arm_fur": true, "weapon": &"spear",
 				"ears": &"wolf", "claws": true,
 			}
@@ -792,7 +910,7 @@ static func preset(people: StringName, variant: int = 0) -> Dictionary:
 				"skin": Color(0.7, 0.52, 0.4).darkened(v * 0.05), "cloth": Color(0.3, 0.24, 0.18),
 				"armor": Color(0.42, 0.4, 0.38), "accent": Color(0.65, 0.45, 0.25), "hair": Color(0.3, 0.2, 0.12),
 				"hair_style": &"mane", "beard": variant % 2 == 0, "pauldrons": true, "weapon": &"great_axe",
-				"ears": &"bear", "paws": true, "arm_fur": true, "fur": Color(0.36, 0.26, 0.18).darkened(v * 0.06),
+				"ears": &"bear", "paws": true, "arm_fur": true, "fur": Color(0.5, 0.36, 0.22).darkened(v * 0.06),
 			}
 		&"vapouriun":
 			return {
@@ -830,5 +948,5 @@ static func preset(people: StringName, variant: int = 0) -> Dictionary:
 			return {
 				"people": &"human", "height": 1.78, "shoulder": 0.46, "limb": 0.065,
 				"skin": Color(0.78, 0.6, 0.47).darkened(v * 0.12), "cloth": Color(0.3, 0.33, 0.4),
-				"armor": Color(0.45, 0.38, 0.3), "hair": Color(0.25, 0.17, 0.1), "weapon": &"sword",
+				"armor": Color(0.36, 0.27, 0.19), "hair": Color(0.25, 0.17, 0.1), "weapon": &"sword",
 			}

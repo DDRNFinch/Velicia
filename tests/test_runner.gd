@@ -69,8 +69,35 @@ func _run_all() -> void:
 	_test_dialogue_data()
 	_test_quests_logic()
 	_test_save_load()
+	await _test_character_models()
 	await _test_gameplay()
 	await _test_main_menu()
+
+
+# ------------------------------------------------------------------ Character models
+
+func _test_character_models() -> void:
+	print("[character models]")
+	for people in [&"human", &"amir", &"burrok", &"vapouriun", &"gouran", &"gyria", &"gyria_boss"]:
+		var body := PlaceholderBody.new()
+		add_child(body)
+		body.build(PlaceholderBody.preset(people, 0))
+		var ok := body.model != null and body.model.skeleton != null and body.model.skeleton.get_bone_count() >= 19
+		check(ok, "%s uses a skinned realistic model" % people)
+		if not ok:
+			body.queue_free()
+			continue
+		check(absf(body.height - float(PlaceholderBody.preset(people).height)) < 0.05, "%s model height matches the canon (%.2f m)" % [people, body.height])
+		body.pose_attack(&"slash", 0, 1.0)
+		for i in 10:
+			body.animate(0.05, 0.0, 5.0, true)
+		var arm := body.model.bone("UpperArm_R")
+		var q := body.model.skeleton.get_bone_pose_rotation(arm)
+		check(q.angle_to(Quaternion.IDENTITY) > 0.5, "%s: animation pivots drive the model's bones" % people)
+		var hand := body.model.skeleton.global_transform * body.model.skeleton.get_bone_global_pose(body.model.bone("Hand_R")).origin
+		check(hand.distance_to(body.get_hand_position()) < 0.2 * body.height / 1.78, "%s: weapon hand follows the model's hand" % people)
+		body.queue_free()
+	await get_tree().process_frame
 
 
 # ------------------------------------------------------------------ Data

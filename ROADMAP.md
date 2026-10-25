@@ -68,9 +68,18 @@ Legend: ✅ done · 🟡 partial / placeholder · ⬜ not started · 🔒 needs 
 - ⬜ Shops and currency, crafting, more weapons per people (spear/axe/dagger movesets)
 - ⬜ Skill tree with combat stances
 
+## Milestone 2c — Realistic characters ✅ (first pass)
+- ✅ Skinned human-anatomy models for all six peoples (+ Gyria boss, 4 human body types) from the CC0 MakeHuman base
+- ✅ Per-people features from the reference sheet: wolf ears, claws and tail (Amir); bear ears, paws, beard (Burrok);
+  blue scales and fins (Vapouriun); pot belly, long beard, hood and robe (Gouran); green skin, pointed ears, tusks (Gyria)
+- ✅ Clothing regions, boots, belts, tunics, cloaks, eyes with irises, eyebrows and lips
+- ✅ The existing combat animations drive the model rigs (arms, spine, head, knees, feet, tail)
+- 🟡 Hair, beards and cloth are shells, not strands/simulated cloth; weapons are still primitive shapes
+- ⬜ Hand-authored animation clips (AnimationTree), facial expressions, armour sets
+
 ## Milestone 7 — Art production ⬜
 - ⬜ Style guide and colour script per region
-- ⬜ Rigged models: player (modular armour), the six peoples, Gyria soldiers and bosses (see CHARACTER_DESIGN.md)
+- 🟡 Rigged models: first-pass realistic models done (Milestone 2c); final art, modular armour and weapons to do
 - ⬜ AnimationTree adapter replacing procedural animation
 - ⬜ Modular environment kit, foliage with LODs/impostors, water shader
 - ⬜ VFX: hits, parry, rings, magic; UI artwork and icons; fonts

@@ -68,6 +68,21 @@ docs/         design and technical documentation
   material (`RegionBuilder.merge_static_meshes`), characters are culled
   beyond 70 m and enemies sleep beyond 75 m.
 
+## Characters
+- `tools/build_characters.py` downloads the CC0 MakeHuman base mesh, skeleton,
+  weights and morph targets (cached in `tools/mh_cache/`), shapes each people
+  with targets, re-poses arms/legs/hands, paints clothing regions, generates
+  eyes/hair/beards/ears/fins/tails/boots, reduces the 163-bone rig to a 20-bone
+  game rig and writes `models/characters/<name>.glb` + `<name>.json`.
+- `CharacterModel` (scripts/core/character_model.gd) loads a model, applies
+  tinted materials (skin shader with brow/lip masks; leather, fabric, fur) and
+  shows the chosen hair/beard/cloak parts.
+- `PlaceholderBody` keeps its animation pivots (all procedural combat poses
+  are unchanged); when a model exists it moves the pivots onto the model's
+  joints and copies their rotations to the bones every frame, adding knee and
+  foot bends. Weapons stay attached to the hand pivot.
+- `tools/model_preview.tscn` and `tools/anim_preview.tscn` render review images.
+
 ## Combat model
 - Player: light combo (3), heavy (guard break, hyper-armour on impact),
   whirling-cut skill, block (stamina), **parry** = block within 0.2 s before

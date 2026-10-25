@@ -49,14 +49,26 @@ armed with steel and magical rings that bind creatures to fight at your side.
   automatic backup recovery.
 - Touch controls for two thumbs, plus keyboard/mouse and gamepad.
 
-## Screens (rendered from this build — placeholder art)
+## Characters
+Every people now has a realistic, skinned model built from the CC0 MakeHuman
+base by `tools/build_characters.py` (see docs/CHARACTER_DESIGN.md):
+
+![The six peoples and a Gyria boss](docs/screenshots/15_models_front.jpg)
+![Faces: human, Amir, Burrok, Vapouriun, Gouran, Gyria](docs/screenshots/16_models_faces.jpg)
+![Amir, Burrok and Gouran in combat poses](docs/screenshots/17_models_poses.jpg)
+
+Rebuild the models with `python3 tools/build_characters.py` (needs numpy and
+internet access to raw.githubusercontent.com), then open the project once so
+Godot imports them.
+
+## Screens (rendered from this build; world art is still placeholder)
 | | |
 |---|---|
 | ![Peoples of Velicia](docs/screenshots/04_peoples_lineup.jpg) | ![The Sentinel Spire](docs/screenshots/05_landmark_spire.jpg) |
 | ![Combat with Gyria scouts](docs/screenshots/06_combat_spire.jpg) | ![A weakened creature can be captured](docs/screenshots/07_creature_capturable.jpg) |
 | ![Companion summoned](docs/screenshots/09_companion_summoned.jpg) | ![Warchief boss](docs/screenshots/10_boss_warchief.jpg) |
 | ![Dialogue](docs/screenshots/11_dialogue.jpg) | ![Region map](docs/screenshots/13_menu_map.jpg) |
-| ![Peoples, front (placeholder bodies)](docs/screenshots/04b_peoples_front.jpg) | ![Archer and shield camp](docs/screenshots/06b_archer_shield_camp.jpg) |
+| ![Peoples in the world](docs/screenshots/04b_peoples_front.jpg) | ![Archer and shield camp](docs/screenshots/06b_archer_shield_camp.jpg) |
 | ![Night](docs/screenshots/09b_night.jpg) | ![Target look: the author's reference sheet](docs/reference/peoples_of_velicia.jpg) |
 
 Regenerate with `tools/screenshots.tscn` (see below).
