@@ -48,6 +48,10 @@ var _telegraph_mat: StandardMaterial3D
 var _speed_mult := 1.0
 var _recovery_mult := 1.0
 var _home_set := false
+var _bar_root: Node3D
+var _bar_fill: MeshInstance3D
+var _aim_line: MeshInstance3D
+var _aim_mat: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -72,6 +76,7 @@ func _ready() -> void:
 	params.armor = definition.armor_color
 	params.accent = definition.accent_color
 	params.weapon = definition.weapon_kind
+	params.shield = definition.shield
 	body = PlaceholderBody.new()
 	add_child(body)
 	body.build(params)
@@ -118,6 +123,8 @@ func _ready() -> void:
 	_telegraph_disc.visible = false
 	add_child(_telegraph_disc)
 
+	_build_health_bar(h)
+	_build_aim_line()
 	home = global_position
 	_strafe_dir = 1.0 if randf() > 0.5 else -1.0
 	if definition.is_boss:
@@ -126,10 +133,84 @@ func _ready() -> void:
 	EventBus.player_respawned.connect(_on_player_respawned)
 
 
+func _build_health_bar(h: float) -> void:
+	if definition.is_boss:
+		return
+	_bar_root = Node3D.new()
+	_bar_root.position.y = h + 0.35
+	_bar_root.visible = false
+	add_child(_bar_root)
+	var bg := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.9, 0.09)
+	bg.mesh = quad
+	bg.material_override = _bar_material(Color(0.05, 0.05, 0.06, 0.75), 0)
+	bg.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_bar_root.add_child(bg)
+	_bar_fill = MeshInstance3D.new()
+	var fq := QuadMesh.new()
+	fq.size = Vector2(0.86, 0.06)
+	_bar_fill.mesh = fq
+	_bar_fill.material_override = _bar_material(Color(0.85, 0.22, 0.18, 0.95), 1)
+	_bar_fill.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_bar_root.add_child(_bar_fill)
+
+
+static func _bar_material(c: Color, priority: int) -> StandardMaterial3D:
+	var m := StandardMaterial3D.new()
+	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	m.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	m.no_depth_test = true
+	m.render_priority = priority
+	m.albedo_color = c
+	return m
+
+
+func _update_health_bar() -> void:
+	if _bar_root == null:
+		return
+	var frac := stats.health_fraction()
+	_bar_root.visible = frac < 0.999 and state != State.DEAD
+	_bar_fill.scale.x = maxf(frac, 0.001)
+
+
+func _build_aim_line() -> void:
+	_aim_line = MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(0.025, 0.025, 1.0)
+	_aim_line.mesh = box
+	_aim_mat = StandardMaterial3D.new()
+	_aim_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_aim_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_aim_mat.albedo_color = Color(Settings.telegraph_color(), 0.5)
+	_aim_line.material_override = _aim_mat
+	_aim_line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_aim_line.top_level = true
+	_aim_line.visible = false
+	add_child(_aim_line)
+
+
+func _update_aim_line(t: float) -> void:
+	if target == null or not is_instance_valid(target):
+		_aim_line.visible = false
+		return
+	var from := body.get_hand_position()
+	var to := target.global_position + Vector3.UP * 1.1
+	_aim_line.visible = true
+	_aim_line.global_position = (from + to) * 0.5
+	_aim_line.look_at(to, Vector3.UP)
+	_aim_line.scale = Vector3(1.0 + t * 1.5, 1.0 + t * 1.5, from.distance_to(to))
+	_aim_mat.albedo_color = Color(Settings.telegraph_color(), 0.15 + 0.55 * t)
+
+
 func _set_state(s: State) -> void:
 	if state == State.ATTACK and s != State.ATTACK:
 		body.set_telegraph(false)
+		body.set_trail(false)
 		_telegraph_disc.visible = false
+		if _aim_line:
+			_aim_line.visible = false
 	state = s
 	_state_time = 0.0
 
@@ -328,7 +409,8 @@ func _state_engage(delta: float) -> void:
 
 	var atk := _choose_attack(d)
 	if atk:
-		if CombatDirector.request_token(self):
+		# Ranged shots don't need a melee slot, so archers keep firing.
+		if (atk.projectile_speed > 0.0 and CombatDirector.request_shot()) or (atk.projectile_speed <= 0.0 and CombatDirector.request_token(self)):
 			_has_token = true
 			_start_attack(atk)
 			return
@@ -374,11 +456,19 @@ func _choose_attack(distance: float) -> AttackDefinition:
 		return null
 	var options: Array[AttackDefinition] = []
 	var total := 0.0
+	var los_checked := false
+	var los := true
 	for a in current_attacks():
 		if float(_cooldowns.get(a.id, 0.0)) > 0.0:
 			continue
 		if distance < a.min_range or distance > a.max_range:
 			continue
+		if a.projectile_speed > 0.0:
+			if not los_checked:
+				los_checked = true
+				los = _has_line_of_sight()
+			if not los:
+				continue
 		options.append(a)
 		total += a.weight
 	if options.is_empty():
@@ -389,6 +479,16 @@ func _choose_attack(distance: float) -> AttackDefinition:
 		if roll <= 0.0:
 			return a
 	return options[-1]
+
+
+## True when nothing solid blocks a shot at the current target.
+func _has_line_of_sight() -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	var from := global_position + Vector3.UP * body.height * 0.8
+	var to := target.global_position + Vector3.UP * 1.1
+	var q := PhysicsRayQueryParameters3D.create(from, to, CombatUtil.LAYER_WORLD | CombatUtil.LAYER_NPC, [get_rid()])
+	return get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 
 
 func _start_attack(atk: AttackDefinition) -> void:
@@ -427,15 +527,28 @@ func _state_attack(delta: float) -> void:
 		_attack_stage = stage
 		if stage == 1:
 			body.set_telegraph(false)
-			AudioManager.play_sfx("swing_heavy" if a.is_heavy else "swing", global_position + Vector3.UP)
+			if a.projectile_speed > 0.0:
+				_fire_projectile(a)
+			else:
+				body.set_trail(true, Color(1.0, 0.75, 0.6))
+				AudioManager.play_sfx("swing_heavy" if a.is_heavy else "swing", global_position + Vector3.UP)
+				if a.ground_telegraph:
+					Fx.dust(global_position - global_transform.basis.z * a.reach * 0.3, 2.2)
+					Fx.shake(0.4)
 		if stage == 2:
 			_telegraph_disc.visible = false
+			body.set_trail(false)
 			if _has_token:
 				CombatDirector.release_token(self)
 				_has_token = false
 	body.pose_attack(a.pose, stage, t)
 	if stage == 0 and t < a.tracking_until:
 		_face_target(delta, definition.turn_speed * 0.8)
+	if a.projectile_speed > 0.0:
+		if stage == 0:
+			_update_aim_line(t)
+		else:
+			_aim_line.visible = false
 	var lunge := a.lunge_speed if (stage == 0 and t > 0.7) or stage == 1 else 0.0
 	var hv := Vector3(velocity.x, 0, velocity.z).move_toward(-global_transform.basis.z * lunge, 40.0 * delta)
 	velocity.x = hv.x
@@ -445,7 +558,7 @@ func _state_attack(delta: float) -> void:
 		_telegraph_disc.global_position = center + Vector3.UP * 0.08
 		var r := a.reach if a.hit_shape == AttackDefinition.HitShape.CIRCLE else a.reach * 0.6
 		_telegraph_disc.scale = Vector3(r, 1, r) * (0.4 + 0.6 * t)
-	if stage == 1:
+	if stage == 1 and a.projectile_speed <= 0.0:
 		_resolve_hits(a)
 	if _attack_elapsed >= a.windup + a.active + recovery:
 		body.clear_pose()
@@ -465,6 +578,26 @@ func _resolve_hits(a: AttackDefinition) -> void:
 		var result: int = t.receive_hit(hit)
 		if result == HitData.Result.HIT and t is CreatureActor:
 			Fx.hit_spark(t.global_position + Vector3.UP, Color(1, 0.4, 0.3))
+
+
+func _fire_projectile(a: AttackDefinition) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	var arrow := Projectile.new()
+	arrow.source = self
+	arrow.attack = a
+	arrow.damage = a.damage
+	arrow.team = team
+	arrow.max_distance = a.projectile_range
+	get_parent().add_child(arrow)
+	var from := body.get_hand_position() - global_transform.basis.z * 0.4
+	var aim := target.global_position + Vector3.UP * 1.15
+	# Lead the target slightly so strafing alone isn't a perfect defence.
+	var tv = target.get("velocity")
+	if tv is Vector3:
+		aim += Vector3(tv.x, 0, tv.z) * (from.distance_to(aim) / a.projectile_speed) * 0.6
+	arrow.launch(from, aim, a.projectile_speed)
+	AudioManager.play_sfx("swing", global_position + Vector3.UP, -4.0)
 
 
 func _give_up() -> void:
@@ -488,6 +621,7 @@ func _state_return(delta: float) -> void:
 	_steer(to.normalized() * definition.run_speed, delta)
 	CombatUtil.turn_toward(self, to.normalized(), 6.0, delta)
 	stats.heal(stats.max_health * 0.2 * delta)
+	_update_health_bar()
 
 
 # -------------------------------------------------------------- Defence
@@ -498,12 +632,27 @@ func receive_hit(hit: HitData) -> int:
 	if target == null and hit.source:
 		_notice(hit.source)
 	var facing := (-global_transform.basis.z).dot(-hit.direction) > 0.3
+	var shield_up := definition.shield and state != State.STAGGER and not (state == State.ATTACK and _attack_stage >= 1) and not is_vulnerable()
+	if shield_up and facing:
+		if hit.guard_break or hit.is_heavy:
+			# Heavy blows smash the shield guard aside.
+			stats.apply_damage(hit.damage * 0.35)
+			_update_health_bar()
+			Fx.spark_burst(global_position + Vector3.UP * 1.3, Color(0.8, 0.85, 1.0), 1.5)
+			Fx.floating_text(global_position + Vector3.UP * 2.3, "Guard broken!", Color(1, 0.6, 0.3))
+			_stagger(1.1, hit.direction * hit.knockback)
+			_vulnerable_until = _time + 1.2
+			return HitData.Result.HIT
+		Fx.spark_burst(global_position + Vector3.UP * 1.3, Color(0.8, 0.85, 1.0), 0.6)
+		_knock = hit.direction * 1.2
+		return HitData.Result.BLOCKED
 	if is_guarding() and facing and not hit.guard_break and not hit.is_heavy:
 		stats.apply_damage(hit.damage * 0.15)
 		_knock = hit.direction * 1.5
 		return HitData.Result.BLOCKED
 	var dmg := hit.damage * 40.0 / (40.0 + definition.defense)
 	stats.apply_damage(dmg)
+	_update_health_bar()
 	body.flash(Color(1, 1, 1))
 	if stats.is_dead():
 		return HitData.Result.HIT
@@ -537,6 +686,12 @@ func on_parried(_by: Node3D) -> void:
 	_stagger(1.4 if not definition.is_boss else 1.1, -global_transform.basis.z * -2.0)
 	_vulnerable_until = _time + 1.6
 	Fx.floating_text(global_position + Vector3.UP * (body.height + 0.3), "Staggered!", Color(1, 0.85, 0.3))
+
+
+## Opens the enemy to critical hits without staggering it (perfect dodge).
+func expose(duration: float) -> void:
+	_vulnerable_until = _time + duration
+	body.flash(Color(0.6, 0.95, 1.0), 0.3)
 
 
 ## True while open to a riposte (critical hits).
@@ -587,6 +742,7 @@ func _on_died() -> void:
 		_has_token = false
 	_set_state(State.DEAD)
 	_alert_label.visible = false
+	_update_health_bar()
 	remove_from_group("targetable")
 	remove_from_group("enemies")
 	collision_layer = 0

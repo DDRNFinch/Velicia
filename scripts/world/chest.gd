@@ -12,8 +12,8 @@ var _interact: Interactable
 
 
 func _ready() -> void:
-	var wood := PlaceholderBody.mat(Color(0.45, 0.3, 0.16) if not hidden_cache else Color(0.35, 0.36, 0.4))
-	var trim := PlaceholderBody.mat(Color(0.85, 0.7, 0.3), 0.4)
+	var wood := VeliciaMaterials.surface("planks", Color.WHITE if not hidden_cache else Color(0.7, 0.72, 0.8), 1.6, 0.85, false)
+	var trim := PlaceholderBody.mat(Color(0.85, 0.7, 0.3), 0.35, 0.0, 1.0, "metal", 3.0)
 	var base := MeshInstance3D.new()
 	base.mesh = PlaceholderBody.box_mesh(Vector3(0.9, 0.5, 0.6))
 	base.material_override = wood

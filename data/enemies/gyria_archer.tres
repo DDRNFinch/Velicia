@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_qnpkm"]
+[ext_resource type="Resource" path="res://data/attacks/gyria_arrow.tres" id="2_nmjoa"]
+[ext_resource type="Resource" path="res://data/attacks/gyria_kick.tres" id="3_qcivj"]
+[ext_resource type="Script" path="res://scripts/data/boss_phase.gd" id="4_1l1q8"]
+[ext_resource type="Script" path="res://scripts/data/enemy_definition.gd" id="5_60sg5"]
+
+[resource]
+script = ExtResource("5_60sg5")
+id = &"gyria_archer"
+display_name = "Gyria Bow-scout"
+people = &"gyria"
+tags = PackedStringArray("gyria", "gyria_scout")
+is_boss = false
+is_draft = true
+max_health = 55.0
+max_poise = 22.0
+defense = 0.0
+walk_speed = 2.3
+run_speed = 4.6
+turn_speed = 7.0
+aggro_range = 22.0
+leash_range = 40.0
+preferred_distance = 11.0
+block_chance = 0.0
+shield = false
+xp_reward = 32
+attacks = Array[ExtResource("1_qnpkm")]([ExtResource("2_nmjoa"), ExtResource("3_qcivj")])
+phases = Array[ExtResource("4_1l1q8")]([])
+loot = {
+"gyria_token": 0.6,
+"stamina_tonic": 0.3
+}
+scale = 1.0
+build = &"wiry"
+skin_color = Color(0.47, 0.5, 0.39, 1)
+armor_color = Color(0.34, 0.3, 0.24, 1)
+accent_color = Color(0.6, 0.2, 0.15, 1)
+weapon_kind = &"bow"

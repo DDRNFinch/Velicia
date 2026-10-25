@@ -4,6 +4,8 @@ extends Node
 ## for music and save restrictions.
 
 const MAX_ATTACKERS := 2
+const MAX_SHOOTERS := 1
+const SHOT_SPACING := 1.4
 const TOKEN_TIMEOUT := 4.0
 const COMBAT_COOLDOWN := 5.0
 
@@ -11,6 +13,7 @@ var player: Node3D
 var _tokens: Dictionary = {} # enemy instance id -> time granted
 var _engaged: Dictionary = {} # enemy instance id -> last time engaged
 var _time := 0.0
+var _last_shot := -10.0
 var _was_in_combat := false
 
 
@@ -46,6 +49,15 @@ func request_token(enemy: Node) -> bool:
 	if _tokens.size() >= limit:
 		return false
 	_tokens[key] = _time
+	return true
+
+
+## Ranged attackers take turns: one shot at a time, spaced out, so archers
+## pressure the player without stacking unavoidable damage.
+func request_shot() -> bool:
+	if _time - _last_shot < SHOT_SPACING / MAX_SHOOTERS:
+		return false
+	_last_shot = _time
 	return true
 
 

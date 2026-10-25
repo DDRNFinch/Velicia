@@ -18,11 +18,20 @@ armed with steel and magical rings that bind creatures to fight at your side.
 - Third-person movement: walk/run (analogue), sprint, jump, follow camera
   with collision, soft-targeting and lock-on.
 - Melee combat with weight and timing: 3-hit light combo, guard-breaking heavy
-  attack, block, **timed parry** (critical riposte), **dodge with i-frames**,
-  stamina, poise/stagger, knockback, hitstop and screen shake.
-- Gyria enemies with telegraphed attacks, guarding, group coordination
-  (attack tokens), patrols and leashing — and **Warchief Vorga**, a two-phase
-  boss with a ground-slam, charge and frenzy.
+  attack, **charged heavy** (hold HEAVY), block, **timed parry** (critical
+  riposte; parried arrows fly back at the archer), **dodge with i-frames** and
+  a **perfect dodge** (last-moment dodge slows time and opens a counter
+  window), stamina, poise/stagger, knockback, hitstop, weapon trails, spark
+  and dust particles, and a camera that pulls back in combat.
+- Four Gyria soldier types with telegraphed attacks and group coordination:
+  skirmishers, spear-wardens, **bow-scouts** (aimed arrows with a visible aim
+  line; they need line of sight), and **shield-wardens** (frontal guard —
+  flank them or break it with a heavy). Overhead health bars. Plus
+  **Warchief Vorga**, a two-phase boss with a ground-slam, charge and frenzy.
+- Textured, lit world: blended terrain materials (grass, dirt, rock, sand,
+  snow), wind-swept grass, trees with leaf canopies and fir branches, rocks,
+  water with moving waves, a cloud-filled sky, masonry and timber buildings,
+  and a full **day/night cycle**.
 - **Magical creature rings**: weaken, daze and capture creatures, summon and
   dismiss them, command your companion, level them up, deepen your bond to
   unlock abilities, train them with the ring-sage, and manage rings and the
@@ -47,6 +56,8 @@ armed with steel and magical rings that bind creatures to fight at your side.
 | ![Combat with Gyria scouts](docs/screenshots/06_combat_spire.jpg) | ![A weakened creature can be captured](docs/screenshots/07_creature_capturable.jpg) |
 | ![Companion summoned](docs/screenshots/09_companion_summoned.jpg) | ![Warchief boss](docs/screenshots/10_boss_warchief.jpg) |
 | ![Dialogue](docs/screenshots/11_dialogue.jpg) | ![Region map](docs/screenshots/13_menu_map.jpg) |
+| ![Peoples, front (placeholder bodies)](docs/screenshots/04b_peoples_front.jpg) | ![Archer and shield camp](docs/screenshots/06b_archer_shield_camp.jpg) |
+| ![Night](docs/screenshots/09b_night.jpg) | ![Target look: the author's reference sheet](docs/reference/peoples_of_velicia.jpg) |
 
 Regenerate with `tools/screenshots.tscn` (see below).
 
@@ -58,6 +69,8 @@ scripts/       autoload singletons, data classes, player, enemies, creatures,
 data/          all content: items, attacks, enemies, creatures, abilities,
                quests (.tres) and dialogue/lore (.json)
 audio/         original procedurally generated placeholder sounds and music
+textures/      original procedurally generated PBR textures (tools/generate_textures.py)
+shaders/       terrain, grass, foliage, water and sky shaders
 tests/         automated headless test suite
 tools/         generators (input map, data, audio, region layout), checkers
 docs/          design, technical and build documentation
@@ -103,7 +116,9 @@ godot --rendering-driver opengl3 res://tools/screenshots.tscn -- /path/to/output
 | Project, Android export preset, input map | Done |
 | Player movement, camera, collision | Done (procedural animation) |
 | Combat (light/heavy/block/parry/dodge/stamina/poise) | Done, tuning ongoing |
-| Gyria soldiers (2 types) + Warchief boss (2 phases) | Done |
+| Gyria soldiers (4 types incl. archers and shields) + Warchief boss (2 phases) | Done |
+| World rendering: PBR terrain, grass, trees, water, sky, day/night | Done (procedural textures) |
+| Combat feel: trails, particles, charged heavy, perfect dodge, health bars | Done |
 | Creature rings: capture, summon, companion AI, XP, bond, training, vault | Done (test creatures only) |
 | Region 1 (Hollow March) with locations, NPCs, quests | Playable draft |
 | Dialogue, quests, reputation, lore, map, journal | Done |
@@ -111,13 +126,16 @@ godot --rendering-driver opengl3 res://tools/screenshots.tscn -- /path/to/output
 | Save/load (versioned, backup) | Done and tested |
 | Menus, HUD, settings, accessibility options | Done |
 | Audio system + placeholder SFX/music | Done |
-| Final 3D models, animations, VFX, UI art, music | **Not started** — see ASSET_REQUIREMENTS.md |
+| Final character/creature models and skeletal animation | **Not started** — characters are still procedural placeholders; see ASSET_REQUIREMENTS.md |
+| Final UI art and music | **Not started** |
 | Official creature roster | **Awaiting designs from the author** |
 | Further regions, full story | See ROADMAP.md |
 
 ## Next milestones
-1. Feel and balance pass from phone play-testing (camera, parry window, enemy timing).
-2. Animation pipeline: AnimationTree adapter so rigged glTF models can replace placeholders.
+1. Realistic characters: import rigged, animated glTF humanoids (CC0 sources such
+   as Quaternius need network access to be enabled) behind an AnimationTree
+   adapter, replacing the procedural bodies.
+2. Feel and balance pass from phone play-testing (camera, parry window, enemy timing).
 3. Official creatures (from the author) + more creature behaviours.
-4. More enemy archetypes (Gyria archers, shield-bearers), ambushes and night/weather.
+4. Ambushes, weather, night-only encounters.
 5. Second region and travel; expanded main story after approval.

@@ -108,6 +108,10 @@ func _process(delta: float) -> void:
 			yaw_node.rotation.y = lerp_angle(yaw_node.rotation.y, want, clampf(6.0 * delta, 0.0, 1.0))
 			pitch_node.rotation.x = lerpf(pitch_node.rotation.x, deg_to_rad(-18.0), clampf(3.0 * delta, 0.0, 1.0))
 
+	# Pull back a little in combat so groups of enemies stay readable.
+	var want_len := distance + (0.9 if CombatDirector.in_combat() else 0.0)
+	spring.spring_length = lerpf(spring.spring_length, want_len, clampf(2.0 * delta, 0.0, 1.0))
+
 	if _shake_time > 0.0:
 		_shake_time -= delta
 		var k := _shake * (_shake_time / 0.3)

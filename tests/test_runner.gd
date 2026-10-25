@@ -52,7 +52,7 @@ func tap(action: String) -> void:
 	await physics_frames(1)
 
 
-const KEYS := {"move_forward": KEY_W, "move_back": KEY_S, "move_left": KEY_A, "move_right": KEY_D, "sprint": KEY_SHIFT, "block": KEY_Q}
+const KEYS := {"move_forward": KEY_W, "move_back": KEY_S, "move_left": KEY_A, "move_right": KEY_D, "sprint": KEY_SHIFT, "block": KEY_Q, "attack_heavy": KEY_K}
 
 
 ## Holds a keyboard key bound to the action (exercises the real input map).
@@ -354,6 +354,37 @@ func _test_gameplay() -> void:
 	check(res == HitData.Result.EVADED, "dodge i-frames evade hits")
 	await seconds(0.6)
 
+	# Charged heavy: hold to charge, release to strike harder.
+	# Freeze the enemy's AI so it can't interrupt the charge.
+	enemy.set_physics_process(false)
+	await seconds(1.2)
+	player.stats.restore_stamina(999)
+	enemy.global_position = player.global_position - player.global_transform.basis.z * 1.8
+	enemy.home = enemy.global_position
+	enemy.stats.max_health = 400.0
+	enemy.stats.set_health(400.0)
+	await physics_frames(2)
+	hp = enemy.stats.health
+	hold("attack_heavy", true)
+	await seconds(0.9)
+	var was_charging := player.is_charging()
+	var charge := player.charge_fraction()
+	hold("attack_heavy", false)
+	await seconds(1.0)
+	check(was_charging and charge > 0.5, "holding heavy charges the attack (%.0f%%)" % (charge * 100.0))
+	check(enemy.stats.health < hp - 30.0, "charged heavy hits hard (%.0f damage)" % (hp - enemy.stats.health))
+	await seconds(0.8)
+
+	# Perfect dodge: dodging at the last moment opens a counter window.
+	player.stats.restore_stamina(999)
+	await tap("dodge")
+	await physics_frames(3)
+	res = player.receive_hit(HitData.make(enemy, player, atk, 12.0))
+	check(res == HitData.Result.EVADED and player.has_counter(), "perfect dodge grants a counter window")
+	check(enemy.is_vulnerable(), "perfect dodge exposes the attacker")
+	await seconds(1.2)
+	enemy.set_physics_process(true)
+
 	# Enemy AI attacks on its own
 	player.stats.set_health(player.stats.max_health)
 	var hp_ai := player.stats.health
@@ -381,6 +412,75 @@ func _test_gameplay() -> void:
 	check(QuestManager.objective_progress("first_watch", 0) == 1, "defeat counts toward quest")
 	check(not enemy.is_in_group("targetable"), "defeated enemy no longer targetable")
 	await seconds(0.3)
+
+	# Shield-warden blocks frontal light attacks; heavy blows break the guard.
+	var shield: Enemy = game.region.get_node("Enemies/CampShield")
+	shield.global_position = player.global_position - player.global_transform.basis.z * 2.0 + Vector3.UP * 0.5
+	shield.home = shield.global_position
+	await physics_frames(3)
+	CombatUtil.face_instantly(shield, CombatUtil.flat_direction(shield.global_position, player.global_position))
+	shield._set_state(Enemy.State.POSITION)
+	var light := HitData.make(player, shield, Database.attack("player_light_1"), 15.0)
+	check(shield.receive_hit(light) == HitData.Result.BLOCKED, "shield blocks a frontal light attack")
+	var heavy := HitData.make(player, shield, Database.attack("player_heavy"), 30.0)
+	check(shield.receive_hit(heavy) == HitData.Result.HIT and shield.state == Enemy.State.STAGGER, "heavy attack breaks the shield guard")
+	shield.global_position = Vector3(86, 20, 4)
+	shield.home = shield.global_position
+	await physics_frames(2)
+
+	# Bow-scout fires arrows; a parried arrow is deflected.
+	var archer: Enemy = game.region.get_node("Enemies/SpireArcher")
+	player.stats.set_health(player.stats.max_health)
+	var open_ground := Vector3(30, VeliciaTerrain.height_at(30, 34) + 0.5, 34)
+	player.global_position = open_ground
+	player.velocity = Vector3.ZERO
+	await physics_frames(5)
+	archer.global_position = open_ground + Vector3(0, 0, -10)
+	archer.global_position.y = VeliciaTerrain.height_at(archer.global_position.x, archer.global_position.z) + 0.5
+	archer.home = archer.global_position
+	await physics_frames(3)
+	var arrow_seen := false
+	var hp_arrow := player.stats.health
+	for i in 420:
+		await get_tree().physics_frame
+		if not get_tree().get_nodes_in_group("projectiles").is_empty():
+			arrow_seen = true
+		if player.stats.health < hp_arrow:
+			break
+	check(arrow_seen, "bow-scout shoots arrows")
+	check(player.stats.health < hp_arrow, "arrows can hit the player")
+	archer.global_position = Vector3(46, 30, -64)
+	archer.home = archer.global_position
+	await seconds(1.0)
+	CombatUtil.face_instantly(player, Vector3(0, 0, -1))
+	hold("block", true)
+	await physics_frames(2)
+	var proj := Projectile.new()
+	proj.source = enemy
+	proj.attack = Database.attack("gyria_arrow")
+	proj.damage = 10.0
+	game.add_child(proj)
+	var deflects := [false]
+	proj.deflected.connect(func(): deflects[0] = true)
+	proj.launch(player.global_position + Vector3(0, 1.2, -2.5), player.global_position + Vector3.UP * 1.2, 20.0)
+	for i in 40:
+		await get_tree().physics_frame
+		if deflects[0]:
+			break
+	var deflected: bool = deflects[0]
+	hold("block", false)
+	check(deflected, "parrying an arrow deflects it back")
+	if is_instance_valid(proj):
+		proj.queue_free()
+	await seconds(0.5)
+
+	# World presentation systems
+	var builder: RegionBuilder = game.region
+	check(builder.grass != null and builder.grass.chunk_count() > 0, "grass chunks built around the player (%d)" % (builder.grass.chunk_count() if builder.grass else 0))
+	builder.day_night.set_hour(23.0)
+	check(builder.day_night.is_night() and builder.day_night.sun.light_energy < 0.5, "night falls with the day/night cycle")
+	builder.day_night.set_hour(10.0)
+	check(not builder.day_night.is_night() and builder.day_night.sun.light_energy > 0.8, "day returns")
 
 	# Capture and companion
 	var def := Database.creature("test_creature_alpha")

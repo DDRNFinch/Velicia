@@ -31,8 +31,8 @@ func build(def: CreatureDefinition) -> void:
 	_meshes.clear()
 	legs.clear()
 	shards.clear()
-	var body_mat := PlaceholderBody.mat(def.body_color, 0.8)
-	var accent := PlaceholderBody.mat(def.accent_color, 0.6)
+	var body_mat := PlaceholderBody.mat(def.body_color, 0.85, 0.0, 1.0, "fur", 3.0)
+	var accent := PlaceholderBody.mat(def.accent_color, 0.6, 0.0, 1.0, "leather", 3.0)
 	var eye := PlaceholderBody.mat(def.eye_color, 0.2, 2.5)
 	if def.body_shape == &"hover":
 		_base_height = 1.1 * size
@@ -66,6 +66,7 @@ func build(def: CreatureDefinition) -> void:
 		tail = _pivot(torso, Vector3(0, 0.12 * size, 0.58 * size))
 		tail.rotation.x = 0.6
 		_part(tail, PlaceholderBody.capsule_mesh(0.06 * size, 0.6 * size), accent, Vector3(0, 0, 0.28 * size), Vector3(PI * 0.5, 0, 0))
+	_meshes = PlaceholderBody.merge_by_parent(_meshes, 60.0)
 	_flash_mat = StandardMaterial3D.new()
 	_flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_flash_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -86,6 +87,7 @@ func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3, rot: Ve
 	mi.position = pos
 	mi.rotation = rot
 	mi.scale = scl
+	mi.visibility_range_end = 60.0
 	parent.add_child(mi)
 	_meshes.append(mi)
 	return mi

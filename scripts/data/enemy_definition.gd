@@ -22,6 +22,9 @@ extends Resource
 @export var preferred_distance: float = 3.2
 ## Chance to raise guard when the player winds up nearby.
 @export var block_chance: float = 0.25
+## Carries a shield: frontal light attacks are always blocked unless the
+## guard is broken (heavy or charged attacks) or the enemy is attacking.
+@export var shield: bool = false
 @export var xp_reward: int = 25
 
 @export_group("Combat")

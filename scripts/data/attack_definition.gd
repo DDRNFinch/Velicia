@@ -29,6 +29,10 @@ enum HitShape { ARC, THRUST, CIRCLE }
 @export var unblockable: bool = false
 @export var guard_break: bool = false
 @export var is_heavy: bool = false
+@export_group("Ranged")
+## Greater than zero makes this a projectile attack (arrows, bolts).
+@export var projectile_speed: float = 0.0
+@export var projectile_range: float = 22.0
 @export_group("AI selection")
 @export var min_range: float = 0.0
 @export var max_range: float = 2.6

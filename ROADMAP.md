@@ -21,10 +21,23 @@ Legend: ✅ done · 🟡 partial / placeholder · ⬜ not started · 🔒 needs 
 - ✅ Soft targeting, lock-on, attack buffering and recovery cancels
 - ✅ Gyria skirmisher and spear-warden with telegraphs, guarding, attack tokens
 - ✅ Boss: Warchief with phases, ground telegraphs, charge and roar
+- ✅ Charged heavy attack, perfect dodge with slow-motion counter window
+- ✅ Weapon trails, spark and dust particles, overhead health bars, combat camera pull-back
+- ✅ Gyria bow-scouts (arrows, aim-line telegraph, line of sight, parry deflects arrows)
+- ✅ Gyria shield-wardens (frontal guard; flank or break with heavies)
 - ⬜ Balance pass on real devices
-- ⬜ More archetypes: archers (projectiles), shield-bearers, Gyria shamans
-- ⬜ Ambushes, group tactics (flanking), enemy morale/retreat
-- ⬜ Final hit VFX, animation-driven hit windows
+- ⬜ Gyria shamans, ambushes, enemy morale/retreat
+- ⬜ Animation-driven hit windows (needs skeletal animation)
+
+## Milestone 2b — World rendering upgrade ✅
+- ✅ Procedural PBR textures; blended terrain shader (grass/dirt/rock/sand/snow, triplanar cliffs)
+- ✅ Wind-swept grass around the player, leaf-card trees and fir branches, displaced rocks
+- ✅ Water shader, cloud sky shader, ACES tonemapping, colour grading
+- ✅ Day/night cycle (saved), textured structures, props and character materials
+- ✅ Mobile budgets: merged character and structure meshes, distance culling
+- 🟡 Characters still procedural primitives (species features per the reference sheet:
+  wolf/bear ears, claws, paws, Vapouriun scales and fins, Gouran beard/belly/hood,
+  green Gyria) — they look boxy; realistic rigged models are the next priority (Milestone 7)
 
 ## Milestone 3 — Touch controls ✅
 - ✅ Floating joystick, look-drag zone, two-thumb button arc, multi-touch
