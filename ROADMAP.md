@@ -21,10 +21,23 @@ Legend: ✅ done · 🟡 partial / placeholder · ⬜ not started · 🔒 needs 
 - ✅ Soft targeting, lock-on, attack buffering and recovery cancels
 - ✅ Gyria skirmisher and spear-warden with telegraphs, guarding, attack tokens
 - ✅ Boss: Warchief with phases, ground telegraphs, charge and roar
+- ✅ Charged heavy attack, perfect dodge with slow-motion counter window
+- ✅ Weapon trails, spark and dust particles, overhead health bars, combat camera pull-back
+- ✅ Gyria bow-scouts (arrows, aim-line telegraph, line of sight, parry deflects arrows)
+- ✅ Gyria shield-wardens (frontal guard; flank or break with heavies)
 - ⬜ Balance pass on real devices
-- ⬜ More archetypes: archers (projectiles), shield-bearers, Gyria shamans
-- ⬜ Ambushes, group tactics (flanking), enemy morale/retreat
-- ⬜ Final hit VFX, animation-driven hit windows
+- ⬜ Gyria shamans, ambushes, enemy morale/retreat
+- ⬜ Animation-driven hit windows (needs skeletal animation)
+
+## Milestone 2b — World rendering upgrade ✅
+- ✅ Procedural PBR textures; blended terrain shader (grass/dirt/rock/sand/snow, triplanar cliffs)
+- ✅ Wind-swept grass around the player, leaf-card trees and fir branches, displaced rocks
+- ✅ Water shader, cloud sky shader, ACES tonemapping, colour grading
+- ✅ Day/night cycle (saved), textured structures, props and character materials
+- ✅ Mobile budgets: merged character and structure meshes, distance culling
+- 🟡 Characters still procedural primitives (species features per the reference sheet:
+  wolf/bear ears, claws, paws, Vapouriun scales and fins, Gouran beard/belly/hood,
+  green Gyria) — they look boxy; realistic rigged models are the next priority (Milestone 7)
 
 ## Milestone 3 — Touch controls ✅
 - ✅ Floating joystick, look-drag zone, two-thumb button arc, multi-touch
@@ -55,9 +68,18 @@ Legend: ✅ done · 🟡 partial / placeholder · ⬜ not started · 🔒 needs 
 - ⬜ Shops and currency, crafting, more weapons per people (spear/axe/dagger movesets)
 - ⬜ Skill tree with combat stances
 
+## Milestone 2c — Realistic characters ✅ (first pass)
+- ✅ Skinned human-anatomy models for all six peoples (+ Gyria boss, 4 human body types) from the CC0 MakeHuman base
+- ✅ Per-people features from the reference sheet: wolf ears, claws and tail (Amir); bear ears, paws, beard (Burrok);
+  blue scales and fins (Vapouriun); pot belly, long beard, hood and robe (Gouran); green skin, pointed ears, tusks (Gyria)
+- ✅ Clothing regions, boots, belts, tunics, cloaks, eyes with irises, eyebrows and lips
+- ✅ The existing combat animations drive the model rigs (arms, spine, head, knees, feet, tail)
+- 🟡 Hair, beards and cloth are shells, not strands/simulated cloth; weapons are still primitive shapes
+- ⬜ Hand-authored animation clips (AnimationTree), facial expressions, armour sets
+
 ## Milestone 7 — Art production ⬜
 - ⬜ Style guide and colour script per region
-- ⬜ Rigged models: player (modular armour), the six peoples, Gyria soldiers and bosses (see CHARACTER_DESIGN.md)
+- 🟡 Rigged models: first-pass realistic models done (Milestone 2c); final art, modular armour and weapons to do
 - ⬜ AnimationTree adapter replacing procedural animation
 - ⬜ Modular environment kit, foliage with LODs/impostors, water shader
 - ⬜ VFX: hits, parry, rings, magic; UI artwork and icons; fonts

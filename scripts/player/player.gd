@@ -7,7 +7,7 @@ extends CharacterBody3D
 signal interactable_changed(target: Node)
 signal target_changed(target: Node3D)
 
-enum State { MOVE, ATTACK, DODGE, STAGGER, CAPTURE, DEAD }
+enum State { MOVE, ATTACK, DODGE, STAGGER, CAPTURE, DEAD, CHARGE }
 
 const GRAVITY := 18.0
 const PARRY_WINDOW := 0.2
@@ -23,6 +23,11 @@ const COMBO_RESET := 0.75
 const LIGHT_COMBO: Array[StringName] = [&"player_light_1", &"player_light_2", &"player_light_3"]
 const HEAVY_ATTACK := &"player_heavy"
 const MAX_POISE := 40.0
+const CHARGED_ATTACK := &"player_heavy_charged"
+const CHARGE_MIN := 0.22
+const CHARGE_FULL := 1.1
+const PERFECT_DODGE_WINDOW := 0.16
+const COUNTER_WINDOW := 1.6
 
 @export var walk_speed: float = 2.4
 @export var run_speed: float = 5.2
@@ -71,6 +76,12 @@ var _sprinting := false
 var _last_safe_position := Vector3.ZERO
 var _targets_refresh := 0.0
 var _interact_refresh := 0.0
+var _charge_time := 0.0
+var _charge_full_fx := false
+var _charge_mult := 1.0
+var _counter_until := -10.0
+var _perfect_used := false
+var _air_speed := 0.0
 
 
 func _ready() -> void:
@@ -218,6 +229,8 @@ func _physics_process(delta: float) -> void:
 			_state_dodge(delta)
 		State.STAGGER:
 			_state_stagger(delta)
+		State.CHARGE:
+			_state_charge(delta)
 		State.CAPTURE, State.DEAD:
 			_decelerate(delta)
 
@@ -225,7 +238,14 @@ func _physics_process(delta: float) -> void:
 		velocity.x += _knockback.x
 		velocity.z += _knockback.z
 		_knockback = _knockback.move_toward(Vector3.ZERO, 30.0 * delta)
+	var was_on_floor := is_on_floor()
+	if not was_on_floor:
+		_air_speed = minf(_air_speed, velocity.y)
 	move_and_slide()
+	if is_on_floor() and not was_on_floor:
+		if _air_speed < -6.0:
+			Fx.dust(global_position, clampf(-_air_speed / 8.0, 0.8, 1.6))
+		_air_speed = 0.0
 
 	var hspeed := Vector2(velocity.x, velocity.z).length()
 	body.animate(delta, hspeed, run_speed, is_on_floor())
@@ -286,11 +306,64 @@ func _state_move(delta: float) -> void:
 		"light":
 			_start_light()
 		"heavy":
-			_start_attack(Database.attack(HEAVY_ATTACK))
+			_begin_charge()
 		"dodge":
 			_start_dodge(dir)
 		"skill":
 			use_skill()
+
+
+# ------------------------------------------------------- Charged heavy
+
+func _begin_charge() -> void:
+	if not stats.has_stamina():
+		Fx.floating_text(global_position + Vector3.UP * 2.0, "Out of stamina", Color(1, 0.8, 0.3))
+		return
+	state = State.CHARGE
+	_charge_time = 0.0
+	_charge_full_fx = false
+	_blocking = false
+	var t := _acquire_attack_target()
+	if t:
+		CombatUtil.face_instantly(self, CombatUtil.flat_direction(global_position, t.global_position))
+
+
+func is_charging() -> bool:
+	return state == State.CHARGE
+
+
+func charge_fraction() -> float:
+	return clampf((_charge_time - CHARGE_MIN) / (CHARGE_FULL - CHARGE_MIN), 0.0, 1.0)
+
+
+func _state_charge(delta: float) -> void:
+	_decelerate(delta)
+	_charge_time += delta
+	stats.drain_stamina(6.0 * delta)
+	var t := current_target()
+	if t and global_position.distance_to(t.global_position) < 6.0:
+		CombatUtil.turn_toward(self, CombatUtil.flat_direction(global_position, t.global_position), 8.0, delta)
+	body.pose_attack(&"slam", 0, clampf(_charge_time / CHARGE_FULL, 0.0, 1.0) * 0.95)
+	if _charge_time >= CHARGE_FULL and not _charge_full_fx:
+		_charge_full_fx = true
+		body.flash(Color(1.0, 0.85, 0.35), 0.25)
+		Fx.ring_burst(global_position + Vector3.UP * 0.2, Color(1.0, 0.8, 0.3), 1.6, 0.35)
+		AudioManager.play_sfx("magic", global_position, -6.0)
+	if _buffered == "dodge":
+		_take_buffer()
+		state = State.MOVE
+		body.clear_pose()
+		_start_dodge(_world_dir(get_move_input()))
+		return
+	var released := not _held("attack_heavy")
+	if released or _charge_time >= CHARGE_FULL + 0.6:
+		state = State.MOVE
+		if _charge_time < CHARGE_MIN:
+			_start_attack(Database.attack(HEAVY_ATTACK))
+		else:
+			var f := charge_fraction()
+			if _start_attack(Database.attack(CHARGED_ATTACK)):
+				_charge_mult = lerpf(1.1, 1.9, f)
 
 
 func _update_block() -> void:
@@ -342,6 +415,7 @@ func _start_attack(atk: AttackDefinition, is_skill: bool = false) -> bool:
 	_attack_stage = -1
 	_attack_hits.clear()
 	_attack_is_skill = is_skill
+	_charge_mult = 1.0
 	_blocking = false
 	_block_toggled = false
 	state = State.ATTACK
@@ -376,6 +450,11 @@ func _state_attack(delta: float) -> void:
 		_attack_stage = stage
 		if stage == 1:
 			AudioManager.play_sfx("swing_heavy" if a.is_heavy else "swing", global_position + Vector3.UP)
+			body.set_trail(true, Color(1.0, 0.85, 0.5) if _charge_mult > 1.0 else Color(0.9, 0.95, 1.0))
+			if a.is_heavy:
+				Fx.dust(global_position - global_transform.basis.z * 1.2, 0.8 * _charge_mult)
+		elif stage == 2:
+			body.set_trail(false)
 	body.pose_attack(a.pose, stage, t)
 
 	var lunge := a.lunge_speed if (stage == 0 and t > 0.6) or stage == 1 else 0.0
@@ -410,6 +489,7 @@ func _state_attack(delta: float) -> void:
 
 
 func _end_attack() -> void:
+	body.set_trail(false)
 	_attack = null
 	_attack_stage = -1
 	_since_attack_end = 0.0
@@ -427,13 +507,20 @@ func _resolve_hits() -> void:
 		if target in _attack_hits:
 			continue
 		_attack_hits.append(target)
-		var dmg := GameState.get_weapon_damage() * a.damage
+		var dmg := GameState.get_weapon_damage() * a.damage * _charge_mult
 		var crit := false
 		if target.has_method("is_vulnerable") and target.is_vulnerable():
 			dmg *= 2.2 if GameState.has_ability("emoria_riposte") else 1.5
 			crit = true
+		elif _time < _counter_until:
+			dmg *= 1.8
+			crit = true
+			_counter_until = -10.0
 		var hit := HitData.make(self, target, a, dmg)
 		hit.is_critical = crit
+		if _charge_mult > 1.0:
+			hit.poise_damage *= _charge_mult
+			hit.knockback *= _charge_mult
 		var result: int = target.receive_hit(hit)
 		_on_hit_result(target, result, hit)
 		if rings and rings.companion and is_instance_valid(rings.companion):
@@ -445,12 +532,16 @@ func _on_hit_result(target: Node3D, result: int, hit: HitData) -> void:
 	match result:
 		HitData.Result.HIT:
 			Fx.hit_spark(pos, Color(1.0, 0.55, 0.2) if hit.is_critical else Color(1, 0.9, 0.7), 1.4 if hit.is_heavy else 1.0)
+			Fx.spark_burst(pos, Color(1.0, 0.7, 0.35) if hit.is_critical else Color(1.0, 0.9, 0.7), 1.6 if hit.is_heavy or hit.is_critical else 1.0)
+			if hit.is_critical:
+				Fx.floating_text(pos + Vector3.UP * 0.8, "Critical!", Color(1.0, 0.6, 0.2))
 			Fx.damage_number(pos + Vector3.UP * 0.4, hit.damage, Color(1, 0.6, 0.2) if hit.is_critical else Color(1, 0.95, 0.85))
 			Fx.hitstop(0.11 if hit.is_critical else (0.085 if hit.is_heavy else 0.045))
 			Fx.shake(0.35 if hit.is_heavy or hit.is_critical else 0.15)
 			AudioManager.play_sfx("hit", pos)
 		HitData.Result.BLOCKED:
 			Fx.hit_spark(pos, Color(0.7, 0.85, 1.0), 0.8)
+			Fx.spark_burst(pos, Color(0.75, 0.85, 1.0), 0.7)
 			Fx.floating_text(pos + Vector3.UP * 0.4, "Blocked", Color(0.7, 0.85, 1.0))
 			AudioManager.play_sfx("block", pos)
 			if not hit.is_heavy and not _attack_is_skill:
@@ -513,7 +604,9 @@ func _start_dodge(dir: Vector3) -> void:
 		return
 	state = State.DODGE
 	_dodge_elapsed = 0.0
+	_perfect_used = false
 	_blocking = false
+	Fx.dust(global_position, 0.9)
 	if dir.length() < 0.2:
 		_dodge_dir = global_transform.basis.z # backstep
 	else:
@@ -563,7 +656,10 @@ func receive_hit(hit: HitData) -> int:
 	if state == State.DEAD:
 		return HitData.Result.IGNORED
 	if is_invulnerable():
-		Fx.floating_text(global_position + Vector3.UP * 2.0, "Dodged", Color(0.75, 0.9, 1.0))
+		if _dodge_elapsed <= PERFECT_DODGE_WINDOW + DODGE_IFRAME_START and not _perfect_used:
+			_on_perfect_dodge(hit)
+		else:
+			Fx.floating_text(global_position + Vector3.UP * 2.0, "Dodged", Color(0.75, 0.9, 1.0))
 		return HitData.Result.EVADED
 	var facing := (-global_transform.basis.z).dot(-hit.direction) > 0.2
 	if _blocking and facing and not hit.unblockable:
@@ -602,14 +698,33 @@ func _take_damage(amount: float, _hit: HitData, flash: bool = true) -> void:
 	stats.apply_damage(dmg)
 	if flash:
 		body.flash(Color(1, 0.2, 0.2))
+		Fx.spark_burst(global_position + Vector3.UP * 1.2, Color(1.0, 0.35, 0.25), 0.7)
 		Fx.damage_number(global_position + Vector3.UP * 2.0, dmg, Color(1, 0.35, 0.3))
 		Fx.shake(0.25)
 		AudioManager.play_sfx("hit", global_position + Vector3.UP)
 
 
+## Dodging at the last moment slows time and opens a counter window.
+func _on_perfect_dodge(hit: HitData) -> void:
+	_perfect_used = true
+	_counter_until = _time + COUNTER_WINDOW
+	stats.restore_stamina(25.0)
+	Fx.floating_text(global_position + Vector3.UP * 2.2, "Perfect dodge!", Color(0.6, 0.95, 1.0))
+	Fx.ring_burst(global_position + Vector3.UP * 0.5, Color(0.6, 0.95, 1.0), 2.4, 0.5)
+	Fx.slowmo(0.45, 0.3)
+	AudioManager.play_sfx("magic", global_position)
+	if hit.source and is_instance_valid(hit.source) and hit.source.has_method("expose"):
+		hit.source.expose(COUNTER_WINDOW)
+
+
+func has_counter() -> bool:
+	return _time < _counter_until
+
+
 func _on_parry(hit: HitData) -> void:
 	var pos := global_position + Vector3.UP * 1.3 - hit.direction * 0.6
 	Fx.hit_spark(pos, Color(1.0, 0.85, 0.3), 1.8)
+	Fx.spark_burst(pos, Color(1.0, 0.85, 0.4), 2.0)
 	Fx.floating_text(pos + Vector3.UP * 0.6, "Parry!", Color(1.0, 0.85, 0.3))
 	Fx.hitstop(0.13)
 	Fx.shake(0.3)

@@ -13,7 +13,7 @@ var _interact: Interactable
 
 func _ready() -> void:
 	add_to_group("shrines")
-	var stone := PlaceholderBody.mat(Color(0.5, 0.52, 0.55), 0.9)
+	var stone := VeliciaMaterials.surface("rock", Color(0.95, 0.97, 1.0), 1.0, 0.9, false)
 	var glow := PlaceholderBody.mat(Color(0.4, 0.9, 1.0), 0.2, 2.2)
 	var base := MeshInstance3D.new()
 	base.mesh = PlaceholderBody.cylinder_mesh(1.1, 1.3, 0.4, 8)

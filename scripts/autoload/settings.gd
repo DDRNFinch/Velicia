@@ -17,9 +17,10 @@ const DEFAULTS := {
 		"quality": "medium", # low / medium / high
 		"render_scale": 1.0,
 		"shadows": true,
-		"view_distance": 170.0,
+		"view_distance": 150.0,
 		"fps_cap": 60,
 		"show_fps": false,
+		"day_night": true,
 	},
 	"controls": {
 		"look_sensitivity": 1.0,

@@ -62,6 +62,7 @@ func _ready() -> void:
 	_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_label.position.y = h + 0.35
 	_label.modulate = Color(1, 0.95, 0.8)
+	_label.visibility_range_end = 28.0
 	add_child(_label)
 	_marker = Label3D.new()
 	_marker.text = "!"
@@ -71,6 +72,7 @@ func _ready() -> void:
 	_marker.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_marker.position.y = h + 0.85
 	_marker.visible = false
+	_marker.visibility_range_end = 60.0
 	add_child(_marker)
 
 	_interact = Interactable.new()

@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://scripts/world/region_builder.gd" id="1_r"]
 [ext_resource type="Script" path="res://scripts/world/location_trigger.gd" id="2_r"]
@@ -12,10 +12,12 @@
 [ext_resource type="Script" path="res://scripts/world/boss_arena.gd" id="10_r"]
 [ext_resource type="Resource" path="res://data/enemies/gyria_skirmisher.tres" id="11_r"]
 [ext_resource type="Resource" path="res://data/enemies/gyria_spearman.tres" id="12_r"]
-[ext_resource type="Resource" path="res://data/enemies/gyria_warchief.tres" id="13_r"]
-[ext_resource type="Resource" path="res://data/creatures/test_creature_alpha.tres" id="14_r"]
-[ext_resource type="Resource" path="res://data/creatures/test_creature_beta.tres" id="15_r"]
-[ext_resource type="Resource" path="res://data/creatures/test_creature_gamma.tres" id="16_r"]
+[ext_resource type="Resource" path="res://data/enemies/gyria_archer.tres" id="13_r"]
+[ext_resource type="Resource" path="res://data/enemies/gyria_shieldbearer.tres" id="14_r"]
+[ext_resource type="Resource" path="res://data/enemies/gyria_warchief.tres" id="15_r"]
+[ext_resource type="Resource" path="res://data/creatures/test_creature_alpha.tres" id="16_r"]
+[ext_resource type="Resource" path="res://data/creatures/test_creature_beta.tres" id="17_r"]
+[ext_resource type="Resource" path="res://data/creatures/test_creature_gamma.tres" id="18_r"]
 
 [node name="HollowMarch" type="Node3D"]
 script = ExtResource("1_r")
@@ -273,10 +275,45 @@ definition = ExtResource("12_r")
 variant = 3
 patrol_radius = 10.0
 
+[node name="SpireArcher" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 46, 0, -64)
+script = ExtResource("5_r")
+definition = ExtResource("13_r")
+variant = 1
+patrol_radius = 3.0
+
+[node name="CampArcher" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 104, 0, 2)
+script = ExtResource("5_r")
+definition = ExtResource("13_r")
+variant = 2
+patrol_radius = 3.0
+
+[node name="CampShield" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 86, 0, 4)
+script = ExtResource("5_r")
+definition = ExtResource("14_r")
+variant = 0
+patrol_radius = 4.0
+
+[node name="FieldShield" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 74, 0, 95)
+script = ExtResource("5_r")
+definition = ExtResource("14_r")
+variant = 1
+patrol_radius = 8.0
+
+[node name="FortRoadArcher" type="CharacterBody3D" parent="Enemies"]
+transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 20, 0, -116)
+script = ExtResource("5_r")
+definition = ExtResource("13_r")
+variant = 3
+patrol_radius = 3.0
+
 [node name="Warchief" type="CharacterBody3D" parent="Enemies"]
 transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 25, 0, -138)
 script = ExtResource("5_r")
-definition = ExtResource("13_r")
+definition = ExtResource("15_r")
 variant = 0
 wait_for_engage = true
 unique_id = "warchief_vorga"
@@ -287,7 +324,7 @@ patrol_radius = 3.0
 [node name="MeadowAlpha" type="Node3D" parent="Creatures"]
 transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, 28, 0, 22)
 script = ExtResource("6_r")
-creature = ExtResource("14_r")
+creature = ExtResource("16_r")
 count = 2
 min_level = 1
 max_level = 2
@@ -296,7 +333,7 @@ spread = 7.0
 [node name="GladeAlpha" type="Node3D" parent="Creatures"]
 transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -72, 0, 36)
 script = ExtResource("6_r")
-creature = ExtResource("14_r")
+creature = ExtResource("16_r")
 count = 2
 min_level = 2
 max_level = 3
@@ -305,7 +342,7 @@ spread = 7.0
 [node name="GladeBeta" type="Node3D" parent="Creatures"]
 transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -80, 0, 46)
 script = ExtResource("6_r")
-creature = ExtResource("15_r")
+creature = ExtResource("17_r")
 count = 2
 min_level = 1
 max_level = 3
@@ -314,7 +351,7 @@ spread = 6.0
 [node name="LakeBeta" type="Node3D" parent="Creatures"]
 transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -48, 0, 70)
 script = ExtResource("6_r")
-creature = ExtResource("15_r")
+creature = ExtResource("17_r")
 count = 1
 min_level = 2
 max_level = 3
@@ -323,7 +360,7 @@ spread = 5.0
 [node name="ForestAlpha" type="Node3D" parent="Creatures"]
 transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -95, 0, -35)
 script = ExtResource("6_r")
-creature = ExtResource("14_r")
+creature = ExtResource("16_r")
 count = 2
 min_level = 3
 max_level = 4
@@ -332,7 +369,7 @@ spread = 8.0
 [node name="HollowGamma" type="Node3D" parent="Creatures"]
 transform = Transform3D(1, 0, -0, 0, 1, 0, 0, 0, 1, -100, 0, -92)
 script = ExtResource("6_r")
-creature = ExtResource("16_r")
+creature = ExtResource("18_r")
 count = 1
 min_level = 5
 max_level = 6

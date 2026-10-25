@@ -40,10 +40,23 @@ const DEFAULTS := {
 	"pouches": false,
 	"angular": false,
 	"crest": false,
+	"ears": &"",          # "" human, &"wolf" (Amir), &"bear" (Burrok), &"fin" (Vapouriun)
+	"fin_crest": false,   # Vapouriun head fin
+	"claws": false,       # Amir clawed hands
+	"paws": false,        # Burrok furry bear paws
+	"belly": 0.0,         # Gouran pot belly (0 = none)
+	"hood": false,
+	"beard_len": 1.0,
+	"eye_scale": 1.0,
+	"skin_detail": "skin",
 	"hair_style": &"short",
 	"weapon": &"sword",
 	"dual_wield": false,
+	"shield": false,
 }
+
+## Characters further than this are not drawn (they are tiny on a phone screen).
+const VIEW_RANGE := 70.0
 
 static var _mesh_cache: Dictionary = {}
 static var _mat_cache: Dictionary = {}
@@ -82,17 +95,44 @@ var _telegraph_mat: StandardMaterial3D
 var _telegraph_on := false
 var _time := 0.0
 var _base_weapon_rot := Vector3(-0.9, 0, 0)
+var _weapon_len := 0.9
+var trail: WeaponTrail
+## Realistic skinned model (CharacterModel) when one exists for this people;
+## the pivots above then drive its bones and only weapons stay primitive.
+var model: CharacterModel
+var _model_meshes: Array[MeshInstance3D] = []
+var _suppress := false
+var _bones: Dictionary = {}
+var _hips_rest := Vector3.ZERO
+
+## Set false (e.g. by a "Character models" setting) to use primitive bodies.
+static var use_models := true
 
 
 # ------------------------------------------------------------- Mesh cache
 
-static func mat(color: Color, roughness: float = 0.85, emission: float = 0.0, alpha: float = 1.0) -> StandardMaterial3D:
-	var key := "%s|%.2f|%.2f|%.2f" % [color.to_html(), roughness, emission, alpha]
+## Cached material. `detail` names a texture set in res://textures (skin,
+## fabric, leather, metal, fur, planks, bark) projected in object space.
+static func mat(color: Color, roughness: float = 0.85, emission: float = 0.0, alpha: float = 1.0, detail: String = "", detail_scale: float = 3.0) -> StandardMaterial3D:
+	var key := "%s|%.2f|%.2f|%.2f|%s|%.1f" % [color.to_html(), roughness, emission, alpha, detail, detail_scale]
 	if _mat_cache.has(key):
 		return _mat_cache[key]
 	var m := StandardMaterial3D.new()
 	m.albedo_color = Color(color, alpha)
 	m.roughness = roughness
+	if not detail.is_empty():
+		var tex := VeliciaMaterials.tex(detail + "_albedo")
+		if tex:
+			m.albedo_texture = tex
+			var nrm := VeliciaMaterials.tex(detail + "_normal")
+			if nrm:
+				m.normal_enabled = true
+				m.normal_texture = nrm
+			m.uv1_triplanar = true
+			m.uv1_scale = Vector3.ONE * detail_scale
+			m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		if detail == "metal":
+			m.metallic = 0.65
 	if emission > 0.0:
 		m.emission_enabled = true
 		m.emission = color
@@ -151,12 +191,15 @@ static func cylinder_mesh(top: float, bottom: float, h: float, sides: int = 8) -
 
 
 func _part(parent: Node3D, mesh: Mesh, material: Material, pos: Vector3, rot: Vector3 = Vector3.ZERO, scl: Vector3 = Vector3.ONE) -> MeshInstance3D:
+	if _suppress:
+		return null
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
 	mi.material_override = material
 	mi.position = pos
 	mi.rotation = rot
 	mi.scale = scl
+	mi.visibility_range_end = VIEW_RANGE
 	parent.add_child(mi)
 	_meshes.append(mi)
 	return mi
@@ -181,16 +224,24 @@ func build(new_params: Dictionary) -> void:
 		c.queue_free()
 	_meshes.clear()
 	_weapon_meshes.clear()
+	_model_meshes.clear()
 	tail_segments.clear()
+	model = null
+	var model_name := model_name_for(params)
+	var realistic := use_models and CharacterModel.exists(model_name)
+	if realistic:
+		# Proportions come from the model so the pivots line up with its joints.
+		params.height = float(CharacterModel.load_info(model_name).get("height", params.height))
 
 	height = params.height
 	var s: float = params.shoulder
 	var limb: float = params.limb
-	var skin := mat(params.skin, 0.7)
-	var cloth := mat(params.cloth)
-	var armor := mat(params.armor, 0.55)
-	var accent := mat(params.accent, 0.5)
-	var hair := mat(params.hair, 0.9)
+	var skin := mat(params.skin, 0.55 if params.skin_detail == "scales" else 0.62, 0.0, 1.0, params.skin_detail, 2.0 if params.skin_detail == "skin" else 5.0)
+	var cloth := mat(params.cloth, 0.9, 0.0, 1.0, "fabric", 4.0)
+	var armor := mat(params.armor, 0.6, 0.0, 1.0, "leather", 3.0)
+	var plate := mat(Color(params.armor).lightened(0.25), 0.35, 0.0, 1.0, "metal", 2.0)
+	var accent := mat(params.accent, 0.4, 0.0, 1.0, "metal", 3.0)
+	var hair := mat(params.hair, 0.8, 0.0, 1.0, "fur", 5.0)
 	var dark := mat(Color(0.08, 0.06, 0.06), 0.5)
 
 	head_r = height * 0.062 * float(params.head_scale)
@@ -202,21 +253,27 @@ func build(new_params: Dictionary) -> void:
 	hips = _pivot(self, Vector3(0, leg_len, 0), "Hips")
 	spine = _pivot(hips, Vector3.ZERO, "Spine")
 
+	_suppress = realistic
 	# Torso
 	var depth: float = s * 0.55 * float(params.depth)
-	_part(hips, box_mesh(Vector3(s * 0.85, height * 0.08, depth * 0.92)), cloth, Vector3(0, 0, 0))
-	_part(spine, box_mesh(Vector3(s * 0.82, torso_len * 0.38, depth * 0.88)), cloth, Vector3(0, torso_len * 0.2, 0))
-	_part(spine, box_mesh(Vector3(s, torso_len * 0.62, depth)), armor, Vector3(0, torso_len * 0.66, 0))
-	_part(spine, box_mesh(Vector3(s * 0.9, height * 0.035, depth * 1.04)), accent, Vector3(0, torso_len * 0.03, 0))
+	var round_mesh := sphere_mesh(0.5)
+	_part(hips, round_mesh, cloth, Vector3(0, 0, 0), Vector3.ZERO, Vector3(s * 0.9, height * 0.14, depth * 0.95))
+	_part(spine, round_mesh, cloth, Vector3(0, torso_len * 0.24, 0), Vector3.ZERO, Vector3(s * 0.84, torso_len * 0.55, depth * 0.88))
+	_part(spine, round_mesh, armor, Vector3(0, torso_len * 0.66, 0), Vector3.ZERO, Vector3(s * 1.04, torso_len * 0.72, depth * 1.02))
+	_part(spine, round_mesh, armor, Vector3(0, torso_len * 0.84, -depth * 0.08), Vector3.ZERO, Vector3(s * 0.7, torso_len * 0.3, depth * 0.8))
+	_part(spine, cylinder_mesh(0.5, 0.5, 1.0, 14), accent, Vector3(0, torso_len * 0.04, 0), Vector3.ZERO, Vector3(s * 0.94, height * 0.035, depth * 1.0))
+	if float(params.belly) > 0.0:
+		var b: float = params.belly
+		_part(spine, round_mesh, cloth, Vector3(0, torso_len * 0.3, -depth * 0.22 * b), Vector3.ZERO, Vector3(s * 0.88, torso_len * 0.62, depth * (1.0 + 0.35 * b)))
 	if params.pouches:
 		for x in [-0.32, 0.0, 0.3]:
 			_part(spine, box_mesh(Vector3(s * 0.16, height * 0.06, depth * 0.3)), mat(Color(0.4, 0.28, 0.16)), Vector3(s * x, torso_len * 0.0, -depth * 0.55))
 	if params.pauldrons:
 		for side in [-1.0, 1.0]:
-			_part(spine, box_mesh(Vector3(s * 0.36, torso_len * 0.16, depth * 1.1)), armor, Vector3(side * s * 0.52, torso_len * 0.98, 0), Vector3(0, 0, side * -0.25))
+			_part(spine, sphere_mesh(0.5), plate, Vector3(side * s * 0.52, torso_len * 0.98, 0), Vector3(0, 0, side * -0.3), Vector3(s * 0.42, torso_len * 0.22, depth * 1.05))
 	if params.has_cloak:
 		var cloak_len := torso_len * 0.9 + leg_len * 0.65
-		_part(spine, box_mesh(Vector3(s * 0.92, cloak_len, 0.04)), mat(params.cloak), Vector3(0, torso_len * 0.95 - cloak_len * 0.5, depth * 0.55), Vector3(-0.06, 0, 0))
+		_part(spine, box_mesh(Vector3(s * 0.82, cloak_len, 0.03)), mat(params.cloak, 0.9, 0.0, 1.0, "fabric", 4.0), Vector3(0, torso_len * 0.95 - cloak_len * 0.5, depth * 0.55), Vector3(-0.06, 0, 0))
 	if params.mantle:
 		# Vapouriun: translucent layered mist-mantle over the shoulders.
 		var mist: Color = params.accent.lerp(Color(0.85, 0.95, 1.0), 0.5)
@@ -235,19 +292,28 @@ func build(new_params: Dictionary) -> void:
 	_part(head, sphere_mesh(head_r), skin, Vector3(0, head_r, 0), Vector3.ZERO, head_scale)
 	# Human jaw and chin
 	var jaw_w := head_r * (1.25 if params.angular else 1.45)
-	_part(head, box_mesh(Vector3(jaw_w, head_r * 0.55, head_r * 1.2)), skin, Vector3(0, head_r * 0.42, -head_r * 0.18))
+	_part(head, sphere_mesh(0.5), skin, Vector3(0, head_r * 0.5, -head_r * 0.2), Vector3.ZERO, Vector3(jaw_w * 0.95, head_r * 0.8, head_r * 1.35))
 	# Human nose (never a muzzle or snout)
 	var ns: float = params.nose_scale
 	_part(head, box_mesh(Vector3(head_r * 0.24 * ns, head_r * 0.42 * ns, head_r * 0.28 * ns)), skin, Vector3(0, head_r * 0.95, -head_r * 0.98), Vector3(-0.25, 0, 0))
 	# Eyes and mouth
 	for side in [-1.0, 1.0]:
-		_part(head, sphere_mesh(head_r * 0.12), dark, Vector3(side * head_r * 0.36, head_r * 1.18, -head_r * 0.86))
+		_part(head, sphere_mesh(head_r * 0.12 * float(params.eye_scale)), dark, Vector3(side * head_r * 0.36, head_r * 1.18, -head_r * 0.86))
 	_part(head, box_mesh(Vector3(head_r * 0.5, head_r * 0.06, head_r * 0.05)), mat(Color(0.45, 0.2, 0.18)), Vector3(0, head_r * 0.58, -head_r * 0.98))
 	if params.heavy_brow:
 		_part(head, box_mesh(Vector3(head_r * 1.35, head_r * 0.22, head_r * 0.35)), skin, Vector3(0, head_r * 1.38, -head_r * 0.82))
-	# Ears
+	# Ears. Amir and Burrok keep human faces; only the ears are animal.
+	var fur_mat := mat(params.fur, 0.95, 0.0, 1.0, "fur", 4.0)
 	for side in [-1.0, 1.0]:
-		if params.pointed_ears:
+		if params.ears == &"wolf":
+			_part(head, cylinder_mesh(0.0, head_r * 0.3, head_r * 0.85, 4), fur_mat, Vector3(side * head_r * 0.55, head_r * 2.15, head_r * 0.05), Vector3(0.1, PI * 0.25, side * -0.28), Vector3(1, 1, 0.45))
+			_part(head, cylinder_mesh(0.0, head_r * 0.16, head_r * 0.55, 4), mat(Color(params.fur).lightened(0.3), 0.95), Vector3(side * head_r * 0.55, head_r * 2.08, -head_r * 0.03), Vector3(0.1, PI * 0.25, side * -0.28), Vector3(1, 1, 0.3))
+		elif params.ears == &"bear":
+			_part(head, sphere_mesh(head_r * 0.34), fur_mat, Vector3(side * head_r * 0.78, head_r * 2.0, head_r * 0.05), Vector3(0, 0, side * -0.35), Vector3(1, 1, 0.55))
+			_part(head, sphere_mesh(head_r * 0.2), mat(Color(params.fur).darkened(0.35), 0.95), Vector3(side * head_r * 0.78, head_r * 2.0, -head_r * 0.08), Vector3(0, 0, side * -0.35), Vector3(1, 1, 0.4))
+		elif params.ears == &"fin":
+			_part(head, cylinder_mesh(0.0, head_r * 0.4, head_r * 1.1, 4), skin, Vector3(side * head_r * 1.05, head_r * 1.2, head_r * 0.35), Vector3(-0.9, 0, side * -1.1), Vector3(1, 1, 0.18))
+		elif params.pointed_ears:
 			_part(head, cylinder_mesh(0.0, head_r * 0.2, head_r * 0.75, 4), skin, Vector3(side * head_r * 1.15, head_r * 1.15, head_r * 0.1), Vector3(0, 0, side * -1.2))
 		else:
 			_part(head, sphere_mesh(head_r * 0.2), skin, Vector3(side * head_r * 0.98, head_r * 1.0, 0), Vector3.ZERO, Vector3(0.5, 1, 0.8))
@@ -260,13 +326,24 @@ func build(new_params: Dictionary) -> void:
 			_part(head, box_mesh(Vector3(head_r * 0.06, head_r * 0.4, head_r * 0.04)), tide, Vector3(side * head_r * 0.62, head_r * 0.9, -head_r * 0.78), Vector3(0, side * 0.5, side * 0.3))
 	if params.beard:
 		_part(head, box_mesh(Vector3(head_r * 1.2, head_r * 1.0, head_r * 0.6)), hair, Vector3(0, head_r * 0.15, -head_r * 0.62))
-	_build_hair(params.hair_style, hair)
+		var bl: float = params.beard_len
+		if bl > 1.0:
+			_part(head, cylinder_mesh(head_r * 0.58, head_r * 0.12, head_r * (bl - 0.4), 8), hair, Vector3(0, -head_r * (bl - 0.4) * 0.5 - head_r * 0.2, -head_r * 0.75), Vector3(-0.15, 0, 0), Vector3(1, 1, 0.55))
+	if params.hood:
+		_part(head, sphere_mesh(head_r * 1.28), cloth, Vector3(0, head_r * 1.15, head_r * 0.22), Vector3.ZERO, Vector3(1.0, 1.05, 1.05))
+		_part(head, cylinder_mesh(0.0, head_r * 0.6, head_r * 0.9, 6), cloth, Vector3(0, head_r * 1.2, head_r * 1.3), Vector3(1.9, 0, 0))
+	else:
+		_build_hair(params.hair_style, hair)
+	if params.fin_crest:
+		var fin := mat(Color(params.skin).lightened(0.15), 0.4, 0.0, 1.0, "scales", 5.0)
+		for i in 3:
+			_part(head, cylinder_mesh(0.0, head_r * 0.35, head_r * (0.9 - 0.15 * i), 4), fin, Vector3(0, head_r * (2.0 - 0.18 * i), head_r * (-0.15 + 0.45 * i)), Vector3(-0.35 - 0.25 * i, 0, 0), Vector3(0.15, 1, 1))
 	if params.crest:
 		for i in 3:
 			_part(head, cylinder_mesh(0.0, head_r * 0.12, head_r * 0.6, 4), armor, Vector3(0, head_r * 2.0, head_r * (-0.4 + 0.4 * i)), Vector3(-0.3, 0, 0))
 
 	# Arms
-	var arm_mat := mat(params.fur, 0.95) if params.arm_fur else skin
+	var arm_mat := mat(params.fur, 0.95, 0.0, 1.0, "fur", 4.0) if params.arm_fur else skin
 	var sleeve := cloth
 	for side in [-1.0, 1.0]:
 		var shoulder := _pivot(spine, Vector3(side * (s * 0.5 + limb * 0.7), torso_len * 0.88, 0), "ArmR" if side > 0 else "ArmL")
@@ -278,7 +355,16 @@ func build(new_params: Dictionary) -> void:
 			# Fur tufts along the forearm (Amir).
 			for i in 3:
 				_part(elbow, cylinder_mesh(0.0, limb * 0.5, limb * 1.6, 4), arm_mat, Vector3(side * limb * 0.9, -arm_len * (0.08 + 0.13 * i), limb * 0.3), Vector3(0, 0, side * -1.1))
-		_part(elbow, sphere_mesh(limb * 1.3), skin, Vector3(0, -arm_len * 0.47, 0))
+		if params.paws:
+			# Burrok: large furry bear paws with blunt claws (human face, animal hands).
+			_part(elbow, sphere_mesh(limb * 1.9), arm_mat, Vector3(0, -arm_len * 0.5, 0), Vector3.ZERO, Vector3(1.0, 0.85, 1.1))
+			for c in 4:
+				_part(elbow, cylinder_mesh(0.0, limb * 0.22, limb * 0.8, 4), mat(Color(0.18, 0.15, 0.12), 0.4), Vector3(limb * (-0.75 + 0.5 * c), -arm_len * 0.5 - limb * 1.6, -limb * 0.7), Vector3(PI + 0.4, 0, 0))
+		else:
+			_part(elbow, sphere_mesh(limb * 1.3), skin, Vector3(0, -arm_len * 0.47, 0))
+			if params.claws:
+				for c in 4:
+					_part(elbow, cylinder_mesh(0.0, limb * 0.18, limb * 0.9, 4), mat(Color(0.86, 0.82, 0.72), 0.4), Vector3(limb * (-0.6 + 0.4 * c), -arm_len * 0.47 - limb * 1.3, -limb * 0.55), Vector3(PI + 0.35, 0, 0))
 		var hand := _pivot(elbow, Vector3(0, -arm_len * 0.47, 0), "Hand")
 		if side > 0:
 			arm_r = shoulder
@@ -296,7 +382,8 @@ func build(new_params: Dictionary) -> void:
 	for side in [-1.0, 1.0]:
 		var leg := _pivot(hips, Vector3(side * s * 0.24, 0, 0), "LegR" if side > 0 else "LegL")
 		_part(leg, capsule_mesh(limb * 1.3, leg_len * 0.98), cloth if not params.arm_fur else mat(params.cloth.darkened(0.2)), Vector3(0, -leg_len * 0.5, 0))
-		_part(leg, box_mesh(Vector3(limb * 2.4, height * 0.045, limb * 4.0)), mat(Color(0.25, 0.18, 0.12)), Vector3(0, -leg_len + height * 0.02, -limb * 0.8))
+		_part(leg, sphere_mesh(0.5), mat(Color(0.3, 0.21, 0.14), 0.7, 0.0, 1.0, "leather", 3.0), Vector3(0, -leg_len + height * 0.025, -limb * 0.9), Vector3.ZERO, Vector3(limb * 2.5, height * 0.06, limb * 4.4))
+		_part(leg, cylinder_mesh(limb * 1.45, limb * 1.3, leg_len * 0.32, 10), mat(Color(0.3, 0.21, 0.14), 0.7, 0.0, 1.0, "leather", 3.0), Vector3(0, -leg_len * 0.82, 0))
 		if side > 0:
 			leg_r = leg
 		else:
@@ -304,9 +391,18 @@ func build(new_params: Dictionary) -> void:
 
 	if params.tail:
 		_build_tail(s, mat(params.fur, 0.95))
+	_suppress = false
+	if realistic:
+		_attach_model(model_name)
 	_build_weapon(params.weapon, weapon_pivot)
 	if params.dual_wield:
 		_build_weapon(params.weapon, offhand_pivot)
+	if params.shield:
+		_build_shield()
+	_merge_parts()
+	_meshes.append_array(_model_meshes)
+	trail = WeaponTrail.new()
+	add_child(trail)
 
 	_flash_mat = StandardMaterial3D.new()
 	_flash_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
@@ -316,6 +412,65 @@ func build(new_params: Dictionary) -> void:
 	_telegraph_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	_telegraph_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	_telegraph_mat.albedo_color = Color(1, 0.2, 0.1, 0.0)
+
+
+## Merges the primitive parts under each animated pivot into one mesh with a
+## surface per material. Animation is unchanged (pivots still move), but a
+## character drops from ~40 draw objects to ~12, which matters on phones.
+func _merge_parts() -> void:
+	var weapon_parents := {}
+	for w in _weapon_meshes:
+		if is_instance_valid(w):
+			weapon_parents[w.get_parent()] = true
+	_meshes = merge_by_parent(_meshes, VIEW_RANGE)
+	var weapons: Array[MeshInstance3D] = []
+	for mi in _meshes:
+		if weapon_parents.has(mi.get_parent()):
+			weapons.append(mi)
+	_weapon_meshes = weapons
+
+
+## Merges mesh instances that share a parent into one mesh with a surface per
+## material. Returns the resulting instances (merged or untouched singles).
+static func merge_by_parent(list: Array[MeshInstance3D], view_range: float) -> Array[MeshInstance3D]:
+	var groups := {}
+	for mi in list:
+		if not is_instance_valid(mi):
+			continue
+		var parent := mi.get_parent()
+		if not groups.has(parent):
+			groups[parent] = []
+		groups[parent].append(mi)
+	var out: Array[MeshInstance3D] = []
+	for parent in groups:
+		var parts: Array = groups[parent]
+		if parts.size() < 2:
+			out.append(parts[0])
+			continue
+		var by_mat := {}
+		for mi in parts:
+			var src: Mesh = (mi as MeshInstance3D).mesh
+			for surf in src.get_surface_count():
+				var m: Material = mi.material_override if mi.material_override else src.surface_get_material(surf)
+				if not by_mat.has(m):
+					by_mat[m] = []
+				by_mat[m].append([src, surf, (mi as MeshInstance3D).transform])
+		var mesh := ArrayMesh.new()
+		for m in by_mat:
+			var st := SurfaceTool.new()
+			for entry in by_mat[m]:
+				st.append_from(entry[0], entry[1], entry[2])
+			st.commit(mesh)
+			mesh.surface_set_material(mesh.get_surface_count() - 1, m)
+		for mi in parts:
+			(parent as Node).remove_child(mi)
+			mi.queue_free()
+		var merged := MeshInstance3D.new()
+		merged.mesh = mesh
+		merged.visibility_range_end = view_range
+		(parent as Node).add_child(merged)
+		out.append(merged)
+	return out
 
 
 func _build_hair(style: StringName, hair: Material) -> void:
@@ -357,13 +512,20 @@ func _build_tail(s: float, fur: Material) -> void:
 func _build_weapon(kind: StringName, pivot: Node3D) -> void:
 	if pivot == null:
 		return
-	var steel := mat(Color(0.78, 0.8, 0.84), 0.3)
-	var wood := mat(Color(0.42, 0.28, 0.16))
-	var grip := mat(Color(0.2, 0.14, 0.1))
+	var steel := mat(Color(0.82, 0.84, 0.88), 0.25, 0.0, 1.0, "metal", 4.0)
+	var wood := mat(Color(0.8, 0.65, 0.5), 0.8, 0.0, 1.0, "bark", 3.0)
+	var grip := mat(Color(0.35, 0.25, 0.18), 0.7, 0.0, 1.0, "leather", 6.0)
 	var gold := mat(params.accent, 0.4)
 	var k := height / 1.78
 	var parts: Array[MeshInstance3D] = []
+	_weapon_len = {&"sword": 0.97, &"spear": 1.95, &"axe": 0.85, &"great_axe": 1.4 * k, &"dagger": 0.36,
+		&"hookblade": 0.8 * k, &"cleaver": 1.2 * k, &"staff": 1.1, &"bow": 0.4}.get(kind, 0.2)
 	match kind:
+		&"bow":
+			var limb_mat := mat(Color(0.45, 0.3, 0.18), 0.7, 0.0, 1.0, "bark", 4.0)
+			for seg in [-1.0, 0.0, 1.0]:
+				parts.append(_part(pivot, box_mesh(Vector3(0.04, 0.42, 0.04)), limb_mat, Vector3(0, seg * 0.38, -0.12 - (0.0 if seg == 0.0 else -0.08)), Vector3(seg * -0.45, 0, 0)))
+			parts.append(_part(pivot, box_mesh(Vector3(0.006, 1.1, 0.006)), mat(Color(0.9, 0.88, 0.8)), Vector3(0, 0, 0.0)))
 		&"sword":
 			parts.append(_part(pivot, cylinder_mesh(0.02, 0.02, 0.2), grip, Vector3(0, 0, 0.04), Vector3(PI * 0.5, 0, 0)))
 			parts.append(_part(pivot, box_mesh(Vector3(0.22, 0.03, 0.04)), gold, Vector3(0, 0, -0.07)))
@@ -399,16 +561,43 @@ func _build_weapon(kind: StringName, pivot: Node3D) -> void:
 	_weapon_meshes.append_array(parts)
 
 
+func _build_shield() -> void:
+	var holder := _pivot(offhand_pivot, Vector3(-0.06, 0.02, 0), "Shield")
+	holder.rotation = Vector3(0.9, 0, 0)
+	var k := height / 1.78
+	var board := mat(Color(0.75, 0.62, 0.5), 0.8, 0.0, 1.0, "planks", 2.0)
+	var rim := mat(Color(0.55, 0.52, 0.5), 0.35, 0.0, 1.0, "metal", 3.0)
+	_part(holder, box_mesh(Vector3(0.06, 0.82, 0.6) * k), board, Vector3(-0.04, 0.05, -0.12) * k)
+	_part(holder, box_mesh(Vector3(0.07, 0.86, 0.06) * k), rim, Vector3(-0.04, 0.05, -0.42) * k)
+	_part(holder, box_mesh(Vector3(0.07, 0.86, 0.06) * k), rim, Vector3(-0.04, 0.05, 0.18) * k)
+	_part(holder, sphere_mesh(0.07 * k), rim, Vector3(-0.09, 0.05, -0.12) * k)
+
+
+func set_trail(on: bool, color: Color = Color(1.0, 0.95, 0.85)) -> void:
+	if trail:
+		trail.emitting = on
+		trail.color = color
+
+
+func get_weapon_base() -> Vector3:
+	return weapon_pivot.global_transform * Vector3(0, 0, -0.12) if weapon_pivot else global_position
+
+
 func set_weapon(kind: StringName) -> void:
 	for m in _weapon_meshes:
 		if is_instance_valid(m):
 			_meshes.erase(m)
+			m.get_parent().remove_child(m)
 			m.queue_free()
 	_weapon_meshes.clear()
 	params.weapon = kind
 	_build_weapon(kind, weapon_pivot)
 	if params.dual_wield:
 		_build_weapon(kind, offhand_pivot)
+	for mm in _model_meshes:
+		_meshes.erase(mm)
+	_merge_parts()
+	_meshes.append_array(_model_meshes)
 
 
 # -------------------------------------------------------------- Animation
@@ -466,6 +655,8 @@ func animate(delta: float, speed: float, run_speed: float, on_floor: bool) -> vo
 		seg.rotation.y = sin(_walk_phase * 0.5 + _time * 1.5 + i * 0.7) * (0.12 + 0.12 * f)
 		if i == 0:
 			seg.rotation.x = lerpf(0.75, 0.25, minf(f, 1.0))
+	if model:
+		_drive_model(f)
 
 	if _flash_time > 0.0:
 		_flash_time -= delta
@@ -474,6 +665,8 @@ func animate(delta: float, speed: float, run_speed: float, on_floor: bool) -> vo
 			_set_overlay(_meshes, null)
 	if _telegraph_on:
 		_telegraph_mat.albedo_color.a = 0.35 + 0.35 * sin(_time * 22.0)
+	if trail and trail.is_active():
+		trail.sample(get_weapon_base(), get_weapon_tip(), delta)
 
 
 func set_pose(target: Dictionary) -> void:
@@ -511,6 +704,9 @@ func pose_attack(kind: StringName, stage: int, t: float) -> void:
 		&"roar":
 			a = {"arm_r": Vector3(0.3, 0, 0.3), "arm_l": Vector3(0.3, 0, -0.3), "spine": Vector3(0.2, 0, 0)}
 			b = {"arm_r": Vector3(0.6, 0, 1.3), "arm_l": Vector3(0.6, 0, -1.3), "spine": Vector3(-0.35, 0, 0), "head": Vector3(-0.45, 0, 0)}
+		&"aim":
+			a = {"arm_r": Vector3(1.2, 0, 0.1), "arm_l": Vector3(1.45, 0, -0.1), "forearm_r": Vector3(0.6, 0, 0), "spine": Vector3(0, -0.6, 0), "weapon": Vector3(-1.57, 0, 0)}
+			b = {"arm_r": Vector3(1.45, 0, 0.1), "arm_l": Vector3(1.5, 0, -0.1), "forearm_r": Vector3(1.5, 0, 0), "spine": Vector3(0, -0.75, 0), "weapon": Vector3(-1.57, 0, 0)}
 		&"cast":
 			a = {"arm_r": Vector3(0.5, 0, 0.4), "arm_l": Vector3(0.5, 0, -0.4), "spine": Vector3(-0.1, 0, 0)}
 			b = {"arm_r": Vector3(1.6, 0, 0.1), "arm_l": Vector3(1.6, 0, -0.1), "spine": Vector3(0.15, 0, 0)}
@@ -598,11 +794,100 @@ func _set_overlay(list: Array[MeshInstance3D], m: Material) -> void:
 func get_weapon_tip() -> Vector3:
 	if weapon_pivot == null:
 		return global_position + Vector3.UP
-	return weapon_pivot.global_transform * Vector3(0, 0, -0.8 * height / 1.78)
+	return weapon_pivot.global_transform * Vector3(0, 0, -_weapon_len)
 
 
 func get_hand_position() -> Vector3:
 	return hand_r_anchor.global_position if hand_r_anchor else global_position + Vector3.UP
+
+
+# ---------------------------------------------------------- Realistic model
+
+## Which models/characters/<name>.glb a body uses.
+static func model_name_for(p: Dictionary) -> StringName:
+	if p.has("model"):
+		return p.model
+	var people: StringName = p.get("people", &"human")
+	match people:
+		&"human":
+			if p.get("female", false):
+				return &"human_female"
+			var sh: float = p.get("shoulder", 0.46)
+			return &"human_lean" if sh < 0.44 else (&"human_broad" if sh > 0.5 else &"human")
+		&"gyria":
+			return &"gyria_boss" if float(p.get("height", 1.86)) > 2.2 else &"gyria"
+	return people
+
+
+func _attach_model(model_name: StringName) -> void:
+	model = CharacterModel.create(model_name, params)
+	add_child(model)
+	for mi in model.parts.values():
+		_model_meshes.append(mi)
+	for b in ["Hips", "Spine", "Chest", "Neck", "Head", "UpperArm_L", "UpperArm_R", "LowerArm_L", "LowerArm_R",
+			"Hand_L", "Hand_R", "UpperLeg_L", "UpperLeg_R", "LowerLeg_L", "LowerLeg_R", "Foot_L", "Foot_R",
+			"Clavicle_L", "Clavicle_R", "Tail0", "Tail1", "Tail2", "Tail3", "Tail4"]:
+		_bones[b] = model.bone(b)
+	# Move the animation pivots onto the model's joints.
+	var rp := func(b: String) -> Vector3: return model.bone_rest_position(b)
+	_hips_rest = rp.call("Hips")
+	hips.position = _hips_rest
+	leg_len = _hips_rest.y
+	spine.position = rp.call("Spine") - _hips_rest
+	var spine_g: Vector3 = rp.call("Spine")
+	head.position = rp.call("Neck") - spine_g
+	head_r = maxf(0.08, (model.head_center.y - rp.call("Neck").y) * 0.55)
+	for sd in ["L", "R"]:
+		var shoulder: Node3D = arm_l if sd == "L" else arm_r
+		var elbow: Node3D = forearm_l if sd == "L" else forearm_r
+		var leg: Node3D = leg_l if sd == "L" else leg_r
+		var ua: Vector3 = rp.call("UpperArm_" + sd)
+		var la: Vector3 = rp.call("LowerArm_" + sd)
+		var hd: Vector3 = rp.call("Hand_" + sd)
+		shoulder.position = ua - spine_g
+		elbow.position = la - ua
+		var hand_pivot: Node3D = elbow.get_child(elbow.get_child_count() - 1) if elbow.get_child_count() > 0 else null
+		for c in elbow.get_children():
+			if c.name == "Hand":
+				hand_pivot = c
+		if hand_pivot:
+			# Grip sits in the palm, a little past the wrist.
+			hand_pivot.position = hd - la + (hd - la).normalized() * 0.07 * height / 1.78
+		leg.position = rp.call("UpperLeg_" + sd) - _hips_rest
+	arm_len = (rp.call("Hand_R") - rp.call("UpperArm_R")).length()
+	if tail_segments.size() > 0 and _bones.get("Tail0", -1) >= 0:
+		tail_segments[0].position = rp.call("Tail0") - _hips_rest
+
+
+func _q(v: Vector3, k: float = 1.0) -> Quaternion:
+	return Quaternion.from_euler(v * k)
+
+
+func _drive_model(f: float) -> void:
+	var m := model
+	m.set_bone_rotation(_bones.Hips, _q(hips.rotation))
+	if _bones.Hips >= 0:
+		m.skeleton.set_bone_pose_position(_bones.Hips, _hips_rest + (hips.position - _hips_rest))
+	m.set_bone_rotation(_bones.Spine, _q(spine.rotation, 0.5))
+	m.set_bone_rotation(_bones.Chest, _q(spine.rotation, 0.5))
+	m.set_bone_rotation(_bones.Neck, _q(head.rotation, 0.4))
+	m.set_bone_rotation(_bones.Head, _q(head.rotation, 0.6))
+	for sd in ["L", "R"]:
+		var arm: Node3D = arm_l if sd == "L" else arm_r
+		var fore: Node3D = forearm_l if sd == "L" else forearm_r
+		var leg: Node3D = leg_l if sd == "L" else leg_r
+		m.set_bone_rotation(_bones["UpperArm_" + sd], _q(arm.rotation))
+		m.set_bone_rotation(_bones["LowerArm_" + sd], _q(fore.rotation))
+		# Raised arms lift the collarbone a little so the shoulder doesn't crumple.
+		var lift := clampf(arm.rotation.x - 1.2, 0.0, 1.6) * 0.18
+		m.set_bone_rotation(_bones["Clavicle_" + sd], _q(Vector3(0, 0, lift * (1.0 if sd == "R" else -1.0))))
+		m.set_bone_rotation(_bones["UpperLeg_" + sd], _q(leg.rotation))
+		# Knees bend as the leg swings forward; feet stay roughly level.
+		var knee := -(maxf(0.0, leg.rotation.x) * 1.15 + 0.06 * f)
+		m.set_bone_rotation(_bones["LowerLeg_" + sd], _q(Vector3(knee, 0, 0)))
+		m.set_bone_rotation(_bones["Foot_" + sd], _q(Vector3(-(leg.rotation.x + knee) * 0.6, 0, 0)))
+	for i in mini(tail_segments.size(), 5):
+		m.set_bone_rotation(_bones["Tail%d" % i], _q(tail_segments[i].rotation))
 
 
 # ---------------------------------------------------------------- Presets
@@ -615,8 +900,9 @@ static func preset(people: StringName, variant: int = 0) -> Dictionary:
 			return {
 				"people": people, "height": 1.8, "shoulder": 0.42, "limb": 0.055,
 				"skin": Color(0.72, 0.56, 0.44).darkened(v * 0.06), "fur": Color(0.48, 0.42, 0.36).darkened(v * 0.08),
-				"cloth": Color(0.36, 0.3, 0.22), "armor": Color(0.5, 0.4, 0.28), "accent": Color(0.75, 0.62, 0.35),
+				"cloth": Color(0.36, 0.3, 0.22), "armor": Color(0.34, 0.25, 0.17), "accent": Color(0.75, 0.62, 0.35),
 				"hair": Color(0.32, 0.28, 0.24), "hair_style": &"mane", "tail": true, "arm_fur": true, "weapon": &"spear",
+				"ears": &"wolf", "claws": true,
 			}
 		&"burrok":
 			return {
@@ -624,13 +910,14 @@ static func preset(people: StringName, variant: int = 0) -> Dictionary:
 				"skin": Color(0.7, 0.52, 0.4).darkened(v * 0.05), "cloth": Color(0.3, 0.24, 0.18),
 				"armor": Color(0.42, 0.4, 0.38), "accent": Color(0.65, 0.45, 0.25), "hair": Color(0.3, 0.2, 0.12),
 				"hair_style": &"mane", "beard": variant % 2 == 0, "pauldrons": true, "weapon": &"great_axe",
+				"ears": &"bear", "paws": true, "arm_fur": true, "fur": Color(0.5, 0.36, 0.22).darkened(v * 0.06),
 			}
 		&"vapouriun":
 			return {
 				"people": people, "height": 1.74, "shoulder": 0.42, "limb": 0.055,
-				"skin": Color(0.82, 0.74, 0.7).darkened(v * 0.1), "cloth": Color(0.22, 0.36, 0.42),
-				"armor": Color(0.3, 0.46, 0.5), "accent": Color(0.35, 0.85, 0.8), "hair": Color(0.12, 0.2, 0.26),
-				"hair_style": &"tide", "mantle": true, "markings": true, "weapon": &"dagger", "dual_wield": true,
+				"skin": Color(0.3, 0.5, 0.66).darkened(v * 0.08), "skin_detail": "scales", "cloth": Color(0.2, 0.22, 0.26),
+				"armor": Color(0.3, 0.24, 0.2), "accent": Color(0.55, 0.75, 0.85), "hair": Color(0.12, 0.2, 0.26),
+				"hair_style": &"none", "ears": &"fin", "fin_crest": true, "weapon": &"dagger", "dual_wield": true,
 			}
 		&"gouran":
 			return {
@@ -638,13 +925,14 @@ static func preset(people: StringName, variant: int = 0) -> Dictionary:
 				"depth": 1.15, "skin": Color(0.66, 0.54, 0.46).darkened(v * 0.07), "cloth": Color(0.36, 0.26, 0.4),
 				"armor": Color(0.42, 0.32, 0.25), "accent": Color(0.95, 0.55, 0.2), "hair": Color(0.55, 0.52, 0.48),
 				"hair_style": &"topknot", "heavy_brow": true, "nose_scale": 1.7, "robe": true, "pouches": true,
-				"beard": variant % 2 == 1, "weapon": &"staff",
+				"beard": true, "beard_len": 2.2 + v * 0.2, "belly": 1.0, "hood": variant % 2 == 0, "eye_scale": 0.65,
+				"weapon": &"staff",
 			}
 		&"gyria":
 			return {
 				"people": people, "height": 1.86, "shoulder": 0.36, "limb": 0.045, "arm_mult": 1.12, "leg_mult": 1.04,
 				"depth": 0.85, "angular": true, "pointed_ears": true, "tusks": true,
-				"skin": Color(0.48, 0.52, 0.4).darkened(v * 0.06), "cloth": Color(0.3, 0.26, 0.22),
+				"skin": Color(0.36, 0.5, 0.28).darkened(v * 0.06), "cloth": Color(0.3, 0.26, 0.22),
 				"armor": Color(0.36, 0.3, 0.25), "accent": Color(0.55, 0.22, 0.16), "hair": Color(0.1, 0.1, 0.1),
 				"hair_style": &"topknot", "weapon": &"hookblade",
 			}
@@ -652,7 +940,7 @@ static func preset(people: StringName, variant: int = 0) -> Dictionary:
 			return {
 				"people": &"gyria", "height": 1.86 * 1.45, "shoulder": 0.7, "limb": 0.09, "arm_mult": 1.12,
 				"depth": 1.0, "angular": true, "pointed_ears": true, "tusks": true, "pauldrons": true, "crest": true,
-				"skin": Color(0.44, 0.48, 0.36), "cloth": Color(0.25, 0.18, 0.16), "armor": Color(0.3, 0.26, 0.24),
+				"skin": Color(0.32, 0.45, 0.25), "cloth": Color(0.25, 0.18, 0.16), "armor": Color(0.3, 0.26, 0.24),
 				"accent": Color(0.75, 0.25, 0.12), "hair": Color(0.08, 0.08, 0.08), "hair_style": &"mane",
 				"weapon": &"cleaver",
 			}
@@ -660,5 +948,5 @@ static func preset(people: StringName, variant: int = 0) -> Dictionary:
 			return {
 				"people": &"human", "height": 1.78, "shoulder": 0.46, "limb": 0.065,
 				"skin": Color(0.78, 0.6, 0.47).darkened(v * 0.12), "cloth": Color(0.3, 0.33, 0.4),
-				"armor": Color(0.45, 0.38, 0.3), "hair": Color(0.25, 0.17, 0.1), "weapon": &"sword",
+				"armor": Color(0.36, 0.27, 0.19), "hair": Color(0.25, 0.17, 0.1), "weapon": &"sword",
 			}

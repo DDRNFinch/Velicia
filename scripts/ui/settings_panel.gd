@@ -15,6 +15,7 @@ const ROWS := [
 	["graphics", "shadows", "Shadows", "toggle"],
 	["graphics", "view_distance", "View distance", "slider", 80.0, 260.0],
 	["graphics", "fps_cap", "Frame rate cap", "options", [30, 60, 90, 120]],
+	["graphics", "day_night", "Day and night cycle", "toggle"],
 	["graphics", "show_fps", "Show FPS", "toggle"],
 	["Controls"],
 	["controls", "look_sensitivity", "Camera sensitivity", "slider", 0.2, 3.0],

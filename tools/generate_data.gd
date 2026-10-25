@@ -61,11 +61,15 @@ func _attacks() -> void:
 	A.pl3 = _atk("player_light_3", {"display_name": "Driving Thrust", "windup": 0.2, "active": 0.14, "recovery": 0.44, "damage": 1.5, "poise_damage": 28.0, "stamina_cost": 16.0, "reach": 2.7, "hit_shape": THRUST, "lunge_speed": 6.0, "pose": &"thrust", "knockback": 4.0})
 	A.ph = _atk("player_heavy", {"display_name": "Sundering Blow", "windup": 0.48, "active": 0.16, "recovery": 0.55, "damage": 2.3, "poise_damage": 45.0, "stamina_cost": 28.0, "reach": 2.6, "arc_degrees": 90.0, "lunge_speed": 3.0, "pose": &"slam", "is_heavy": true, "guard_break": true, "knockback": 6.0})
 	A.pw = _atk("player_whirling_cut", {"display_name": "Whirling Cut", "windup": 0.2, "active": 0.36, "recovery": 0.42, "damage": 1.4, "poise_damage": 25.0, "stamina_cost": 32.0, "reach": 2.9, "hit_shape": CIRCLE, "pose": &"spin", "is_heavy": true, "knockback": 5.0})
+	A.phc = _atk("player_heavy_charged", {"display_name": "Charged Sundering", "windup": 0.1, "active": 0.18, "recovery": 0.6, "damage": 2.6, "poise_damage": 70.0, "stamina_cost": 22.0, "reach": 2.8, "arc_degrees": 120.0, "lunge_speed": 5.0, "pose": &"slam", "is_heavy": true, "guard_break": true, "knockback": 8.0})
 	# Gyria soldiers
 	A.gs = _atk("gyria_slash", {"display_name": "Hookblade Slash", "windup": 0.55, "active": 0.14, "recovery": 0.7, "damage": 12.0, "poise_damage": 18.0, "reach": 2.2, "max_range": 2.5, "lunge_speed": 2.5, "pose": &"slash", "weight": 3.0, "cooldown": 0.4})
 	A.gl = _atk("gyria_lunge", {"display_name": "Lunging Cut", "windup": 0.8, "active": 0.16, "recovery": 0.9, "damage": 16.0, "poise_damage": 26.0, "reach": 2.4, "hit_shape": THRUST, "min_range": 1.6, "max_range": 4.4, "lunge_speed": 7.5, "pose": &"thrust", "weight": 1.5, "cooldown": 3.0, "knockback": 4.0})
 	A.gt = _atk("gyria_spear_thrust", {"display_name": "Spear Thrust", "windup": 0.65, "active": 0.15, "recovery": 0.75, "damage": 13.0, "poise_damage": 20.0, "reach": 3.2, "hit_shape": THRUST, "max_range": 3.4, "lunge_speed": 3.0, "pose": &"thrust", "weight": 3.0, "cooldown": 0.5})
 	A.gw = _atk("gyria_spear_sweep", {"display_name": "Spear Sweep", "windup": 0.75, "active": 0.18, "recovery": 0.8, "damage": 11.0, "poise_damage": 22.0, "reach": 3.0, "arc_degrees": 170.0, "max_range": 3.0, "pose": &"sweep", "weight": 1.2, "cooldown": 3.5, "knockback": 4.0})
+	A.ga = _atk("gyria_arrow", {"display_name": "Aimed Shot", "windup": 1.0, "active": 0.1, "recovery": 0.7, "damage": 11.0, "poise_damage": 12.0, "projectile_speed": 22.0, "projectile_range": 26.0, "min_range": 4.5, "max_range": 20.0, "cooldown": 2.2, "tracking_until": 0.85, "pose": &"aim", "weight": 3.0, "knockback": 1.5})
+	A.gk = _atk("gyria_kick", {"display_name": "Push Kick", "windup": 0.45, "active": 0.12, "recovery": 0.6, "damage": 7.0, "poise_damage": 22.0, "reach": 1.8, "hit_shape": THRUST, "max_range": 2.0, "knockback": 6.0, "pose": &"thrust", "weight": 2.0, "cooldown": 1.5})
+	A.gb = _atk("gyria_shield_bash", {"display_name": "Shield Bash", "windup": 0.6, "active": 0.15, "recovery": 0.8, "damage": 10.0, "poise_damage": 32.0, "reach": 2.0, "hit_shape": THRUST, "max_range": 2.2, "lunge_speed": 4.0, "knockback": 6.0, "pose": &"thrust", "weight": 1.5, "cooldown": 3.0})
 	# Gyria Warchief (boss)
 	A.wc = _atk("warchief_cleave", {"display_name": "Cleaver Arc", "windup": 0.7, "active": 0.18, "recovery": 0.8, "damage": 24.0, "poise_damage": 40.0, "reach": 3.3, "arc_degrees": 120.0, "max_range": 3.4, "lunge_speed": 2.5, "pose": &"slash", "weight": 3.0, "cooldown": 0.6, "is_heavy": true, "knockback": 5.0})
 	A.ws = _atk("warchief_slam", {"display_name": "Earthbreaker", "windup": 1.1, "active": 0.2, "recovery": 1.1, "damage": 32.0, "poise_damage": 60.0, "reach": 4.2, "hit_shape": CIRCLE, "max_range": 3.6, "pose": &"slam", "weight": 1.6, "cooldown": 6.0, "unblockable": true, "parryable": false, "ground_telegraph": true, "is_heavy": true, "knockback": 8.0})
@@ -174,6 +178,47 @@ func _enemies() -> void:
 	sp.armor_color = Color(0.3, 0.27, 0.22)
 	sp.weapon_kind = &"spear"
 	_save(sp, "res://data/enemies/gyria_spearman.tres")
+
+	var ar := EnemyDefinition.new()
+	ar.id = &"gyria_archer"
+	ar.display_name = "Gyria Bow-scout"
+	ar.people = &"gyria"
+	ar.tags = PackedStringArray(["gyria", "gyria_scout"])
+	ar.max_health = 55.0
+	ar.max_poise = 22.0
+	ar.walk_speed = 2.3
+	ar.run_speed = 4.6
+	ar.aggro_range = 22.0
+	ar.leash_range = 40.0
+	ar.preferred_distance = 11.0
+	ar.block_chance = 0.0
+	ar.xp_reward = 32
+	ar.attacks = [A.ga, A.gk] as Array[AttackDefinition]
+	ar.loot = {"gyria_token": 0.6, "stamina_tonic": 0.3}
+	ar.skin_color = Color(0.47, 0.5, 0.39)
+	ar.armor_color = Color(0.34, 0.3, 0.24)
+	ar.weapon_kind = &"bow"
+	_save(ar, "res://data/enemies/gyria_archer.tres")
+
+	var sh := EnemyDefinition.new()
+	sh.id = &"gyria_shieldbearer"
+	sh.display_name = "Gyria Shield-warden"
+	sh.people = &"gyria"
+	sh.tags = PackedStringArray(["gyria"])
+	sh.max_health = 95.0
+	sh.max_poise = 45.0
+	sh.defense = 4.0
+	sh.shield = true
+	sh.block_chance = 0.0
+	sh.walk_speed = 1.9
+	sh.run_speed = 3.8
+	sh.preferred_distance = 2.6
+	sh.xp_reward = 40
+	sh.attacks = [A.gs, A.gb] as Array[AttackDefinition]
+	sh.loot = {"gyria_token": 0.7, "healing_draught": 0.3, "gyria_scale_vest": 0.05}
+	sh.armor_color = Color(0.4, 0.34, 0.28)
+	sh.weapon_kind = &"hookblade"
+	_save(sh, "res://data/enemies/gyria_shieldbearer.tres")
 
 	var boss := EnemyDefinition.new()
 	boss.id = &"gyria_warchief"

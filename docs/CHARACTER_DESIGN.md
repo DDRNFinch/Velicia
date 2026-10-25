@@ -7,13 +7,25 @@ prompt or asset conflicts with this document, this document wins.
 **Canon:** the six peoples below are established canon. Do not rename them,
 merge them or change their defining physical traits.
 
-**Art direction:** stylised 3D fantasy for an Android open-world RPG. All
+**Art direction:** high-fidelity, painterly-realistic 3D fantasy (see the
+author's reference sheet below), scaled for an Android open-world RPG.
+
+**Visual reference (authoritative):**
+![The Peoples of Velicia — author's reference sheet](reference/peoples_of_velicia.jpg)
+`docs/reference/peoples_of_velicia.jpg` shows the intended look of every
+people: close-ups, back views, the size comparison, the Gyria boss, the
+creature-ring concept and the in-game style target. New concept art and
+models must match it. All
 designs are original to Velicia and must not copy protected characters or
 distinctive designs from existing franchises.
 
-The current in-game models are **procedural placeholders** built in
-`scripts/core/placeholder_body.gd` (`PlaceholderBody.preset()`), which encodes
-the proportions below so silhouettes already read correctly in play.
+The current in-game characters are **realistic skinned models** built by
+`tools/build_characters.py` from the CC0 MakeHuman base mesh (one model per
+people, plus human body variants), with clothing, hair, beards, wolf/bear
+ears, claws, paws, fins, tusks and tails generated to this spec. They are a
+solid first pass, not final art: hand-made models and real hair/cloth should
+replace them in art production. Proportions and features per people live in
+`CHARACTERS` in that script and `PlaceholderBody.preset()`.
 
 ---
 
@@ -26,8 +38,8 @@ Each people must be recognisable from a distance by silhouette alone.
 | Humans | ~1.78 m | Varied | Baseline | Varied |
 | Amir | ~1.80 m | Lean, athletic | Slim upright figure, long trailing tail, spear line | Spear |
 | Burrok | ~2.75 m (9 ft) | Massive, broad | Huge wedge, heavy shoulders, great axe or fists | Bare hands, large axes |
-| Vapouriun | ~1.74 m | Light, quick | Flowing translucent mantle, swept "tide" hair, twin daggers | Daggers |
-| Gouran | ~1.30 m | Short, stocky | Compact square block, layered robes, staff and pouches | Elemental magic |
+| Vapouriun | ~1.74 m | Light, quick, slender | Blue scaled figure, finned head crest and ears, twin daggers | Daggers |
+| Gouran | ~1.30 m | Short, stocky, pot-bellied | Compact block with a round belly, long beard, hooded robes, crystal staff | Elemental magic |
 | Gyria soldier | ~1.86 m | Skinny, wiry | Tall narrow figure, long limbs, angular head | Weapons like human warriors |
 | Gyria boss | ≥ 1.25× soldier (prototype: ~2.7 m) | Imposing | Clearly larger Gyria with distinctive gear | Unique per boss |
 
@@ -44,8 +56,9 @@ Each people must be recognisable from a distance by silhouette alone.
 **Mandatory**
 - **Clearly human faces**: human nose, mouth, jaw and facial proportions.
 - **No wolf muzzle, no canine snout, no fully wolf-like head.** Ever.
-- Hairy arms and long, wolf-like tails.
-- Lean, athletic, agile bodies.
+- **Wolf ears** on top of the head (in addition to a human face).
+- Hairy, furry arms ending in **clawed hands**, and long, bushy wolf-like tails.
+- Lean, athletic, agile bodies; wild, layered hair.
 
 **Combat:** spears; speed, evasion, reach and rapid, precise attacks.
 **Clothing:** mobility first — light leather, wraps, fitted layers, tail openings.
@@ -55,6 +68,8 @@ Each people must be recognisable from a distance by silhouette alone.
 **Mandatory**
 - **Clearly human faces**: human nose, mouth, jaw and facial proportions.
 - **No bear muzzle, no fully bear-like head.** Ever.
+- **Rounded bear ears**; thick beards are common.
+- **Furry forearms ending in large bear-like paws/hands.**
 - About **nine feet (≈2.75 m)** tall; heavily muscular and broad.
 - Strength shown through body mass, hands, neck and shoulders — never by
   animalising the face.
@@ -67,33 +82,33 @@ absorbing damage.
 **Canon:** about average human size; fast, intelligent, skilled with daggers;
 fighting style built on agility, quick attacks, evasion and tactics.
 
-**Proposed visual identity** (must not read as "generic humans with blue skin"):
-- Human-range skin tones with **iridescent tide-markings** on cheeks, neck and
-  forearms that shift subtly in colour, like light on water.
-- Hair worn in heavy, swept **"tide" strands** that trail behind them like a current.
-- Layered garments of **translucent, mist-like fabric** (a "mist-mantle") over
-  close-fitting sea-toned clothing; sea-glass and pearl ornaments.
-- In motion, a faint mist trails from the mantle.
-- Twin daggers, light boots, no heavy armour.
+**Visual identity (per the reference sheet):**
+- **Blue, scaly skin** with darker patterning, lighter on the face and chest.
+- **Finned head crests and fin-like ears**; sharp, intelligent features.
+- Slender, agile build; close-fitting leather straps and light armour.
+- Twin daggers; light boots; no heavy armour.
 
 ## Gouran — dwarf-like elemental wizards
 **Mandatory**
 - Look like a distinctive fantasy **dwarf** people, **not goblins**.
 - Short, stocky, solidly built: broad shoulders, thick limbs, compact proportions.
-- Distinctive, unattractive, weathered faces: heavy brows, deep-set eyes, broad
-  noses, unusual features. Beards optional.
+- Distinctive, unattractive, weathered faces: heavy brows, **small deep-set
+  eyes**, broad noses, unusual features. **Long beards** are typical.
+- A **pot belly** and a soft, weak-looking body — their power is magical.
 - **Not** goblin-like: no large pointed ears, no spindly limbs, no impish face,
   no green skin, no hunched sneaky posture.
 - An original people of Velicia — avoid miner/brewer/hammer clichés as their
   defining identity. Their identity is elemental scholarship, cunning and pride.
 
-**Clothing:** rugged wizard robes, layered garments, belts, pouches, practical tools.
+**Clothing:** hooded, rugged wizard robes, layered garments, belts, pouches,
+practical tools, and staffs topped with glowing elemental crystals.
 **Combat:** elemental magic, intelligence and cunning rather than strength.
 Their small stature should contrast with their magical power and personality.
 
 ## Gyria — skinny orc-like warriors
 **Standard soldiers — mandatory**
 - **Skinny, wiry and lean** — never bulky or heavily muscular.
+- **Green skin**, pointed ears, small tusks.
 - Narrow shoulders, relatively long limbs, angular faces, battle-worn look.
 - Practical, worn armour suited to warfare; not excessively elaborate.
 - Weapons and tactics comparable to human warriors.
@@ -115,10 +130,10 @@ Their small stature should contrast with their magical power and personality.
 ---
 
 ## Asset review checklist (every model)
-- [ ] Amir: human face, no muzzle/snout; hairy arms; long tail; lean build.
-- [ ] Burrok: human face, no muzzle; ~9 ft; massive build; substantial armour.
-- [ ] Vapouriun: average size; water identity beyond skin colour; daggers.
-- [ ] Gouran: dwarf-like, stocky, weathered face; not goblin-like.
+- [ ] Amir: human face, no muzzle/snout; wolf ears; furry clawed arms; long tail; lean build.
+- [ ] Burrok: human face, no muzzle; bear ears; furry arms and paws; ~9 ft; massive build.
+- [ ] Vapouriun: average size; blue scaled skin; fins; daggers.
+- [ ] Gouran: dwarf-like, stocky, pot belly, beard, weathered face; not goblin-like.
 - [ ] Gyria soldier: skinny and wiry; not bulky.
 - [ ] Gyria boss: clearly larger than soldiers; unique moveset.
 - [ ] Silhouettes distinct at distance; design is original.

@@ -95,6 +95,7 @@ func _ready() -> void:
 	_label.outline_size = 10
 	_label.position.y = 1.5 * sz + 0.3
 	_label.no_depth_test = false
+	_label.visibility_range_end = 25.0
 	add_child(_label)
 
 	var ring := TorusMesh.new()

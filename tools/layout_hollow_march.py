@@ -89,6 +89,11 @@ enemies = [
  ("CampGuard3", "gyria_skirmisher", 92, 10, 2, {}),
  ("FieldPatrol1", "gyria_skirmisher", 70, 80, 0, {"patrol_radius": 10.0}),
  ("FieldPatrol2", "gyria_spearman", 80, 90, 3, {"patrol_radius": 10.0}),
+ ("SpireArcher", "gyria_archer", 46, -64, 1, {"patrol_radius": 3.0}),
+ ("CampArcher", "gyria_archer", 104, 2, 2, {"patrol_radius": 3.0}),
+ ("CampShield", "gyria_shieldbearer", 86, 4, 0, {"patrol_radius": 4.0}),
+ ("FieldShield", "gyria_shieldbearer", 74, 95, 1, {"patrol_radius": 8.0}),
+ ("FortRoadArcher", "gyria_archer", 20, -116, 3, {"patrol_radius": 3.0}),
  ("Warchief", "gyria_warchief", 25, -138, 0, {"wait_for_engage": True, "unique_id": "warchief_vorga", "patrol_radius": 3.0}),
 ]
 for (nm, eid, x, z, var, extra) in enemies:

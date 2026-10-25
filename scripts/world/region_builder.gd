@@ -10,7 +10,7 @@ extends Node3D
 @export var region_name: String = "The Hollow March"
 @export var terrain_seed: int = 1337
 @export var region_size: float = 360.0
-@export var cell_size: float = 4.0
+@export var cell_size: float = 3.0
 ## Pairs of location ids joined by dirt roads.
 @export var paths: Array[PackedStringArray] = []
 ## Lakes: x, z, radius, depth
@@ -18,7 +18,7 @@ extends Node3D
 ## Forest focus: x, z, radius, density boost
 @export var forests: Array[Vector4] = []
 
-const CHUNK := 90.0
+const CHUNK := 120.0
 
 var _path_segments: Array = []
 var _locations: Dictionary = {}
@@ -28,6 +28,9 @@ var _forest_noise: FastNoiseLite
 var _quality := "medium"
 var _rng := RandomNumberGenerator.new()
 var _sun: DirectionalLight3D
+var _sky_material: ShaderMaterial
+var day_night: DayNight
+var grass: GrassField
 
 
 func _enter_tree() -> void:
@@ -83,6 +86,11 @@ func _ready() -> void:
 			_build_structure(lt)
 	_build_trees()
 	_build_rocks()
+	grass = GrassField.new()
+	grass.name = "Grass"
+	grass.weight_func = ground_weights
+	grass.configure(_quality)
+	add_child(grass)
 
 
 func get_location(id: String) -> LocationTrigger:
@@ -95,21 +103,23 @@ func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_SKY
 	var sky := Sky.new()
-	var sky_mat := ProceduralSkyMaterial.new()
-	sky_mat.sky_top_color = Color(0.28, 0.45, 0.72)
-	sky_mat.sky_horizon_color = Color(0.74, 0.72, 0.68)
-	sky_mat.ground_horizon_color = Color(0.55, 0.5, 0.42)
-	sky_mat.ground_bottom_color = Color(0.2, 0.2, 0.18)
-	sky_mat.sun_angle_max = 30.0
-	sky.sky_material = sky_mat
+	_sky_material = VeliciaMaterials.sky()
+	sky.sky_material = _sky_material
+	sky.radiance_size = Sky.RADIANCE_SIZE_64
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.ambient_light_energy = 0.55
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.tonemap_exposure = 1.05
+	env.tonemap_white = 6.0
 	env.fog_enabled = true
 	env.fog_light_color = Color(0.66, 0.7, 0.76)
-	env.fog_density = 0.0035 if _quality != "low" else 0.006
-	env.fog_sky_affect = 0.3
+	env.fog_density = 0.0032 if _quality != "low" else 0.006
+	env.fog_sky_affect = 0.25
+	env.adjustment_enabled = true
+	env.adjustment_saturation = 1.12
+	env.adjustment_contrast = 1.06
 	var we := WorldEnvironment.new()
 	we.name = "WorldEnvironment"
 	we.environment = env
@@ -118,12 +128,19 @@ func _build_environment() -> void:
 	sun.name = "Sun"
 	sun.rotation_degrees = Vector3(-48, -35, 0)
 	sun.light_color = Color(1.0, 0.94, 0.84)
-	sun.light_energy = 0.95
+	sun.light_energy = 1.0
 	sun.shadow_enabled = bool(Settings.get_value("graphics", "shadows")) and _quality != "low"
+	sun.shadow_bias = 0.04
+	sun.shadow_normal_bias = 1.2
+	sun.shadow_blur = 1.5
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	sun.directional_shadow_max_distance = 45.0 if _quality == "high" else 30.0
+	sun.directional_shadow_max_distance = 50.0 if _quality == "high" else 32.0
 	add_child(sun)
 	_sun = sun
+	day_night = DayNight.new()
+	day_night.name = "DayNight"
+	add_child(day_night)
+	day_night.setup(sun, env, _sky_material)
 	Settings.changed.connect(_on_settings_changed)
 
 
@@ -140,20 +157,21 @@ func _build_terrain() -> void:
 	var verts := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var colors := PackedColorArray()
+	var uvs := PackedVector2Array()
 	var indices := PackedInt32Array()
 	verts.resize((n + 1) * (n + 1))
 	normals.resize(verts.size())
 	colors.resize(verts.size())
+	uvs.resize(verts.size())
 	for iz in n + 1:
 		for ix in n + 1:
 			var x := -half + ix * cell_size
 			var z := -half + iz * cell_size
-			var h := VeliciaTerrain.height_at(x, z)
 			var i := iz * (n + 1) + ix
-			verts[i] = Vector3(x, h, z)
-			var nrm := VeliciaTerrain.normal_at(x, z)
-			normals[i] = nrm
-			colors[i] = _ground_color(x, z, h, nrm)
+			verts[i] = Vector3(x, VeliciaTerrain.height_at(x, z), z)
+			normals[i] = VeliciaTerrain.normal_at(x, z)
+			colors[i] = ground_weights(x, z)
+			uvs[i] = Vector2(x, z) * 0.1
 	for iz in n:
 		for ix in n:
 			var a := iz * (n + 1) + ix
@@ -166,13 +184,16 @@ func _build_terrain() -> void:
 	arrays[Mesh.ARRAY_VERTEX] = verts
 	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
 	arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	var m := StandardMaterial3D.new()
-	m.vertex_color_use_as_albedo = true
-	m.roughness = 0.95
-	mesh.surface_set_material(0, m)
+	# Tangents are needed for the terrain normal maps.
+	var st := SurfaceTool.new()
+	st.create_from(mesh, 0)
+	st.generate_tangents()
+	mesh = st.commit()
+	mesh.surface_set_material(0, VeliciaMaterials.terrain())
 	var mi := MeshInstance3D.new()
 	mi.name = "Terrain"
 	mi.mesh = mesh
@@ -186,26 +207,26 @@ func _build_terrain() -> void:
 	add_child(body)
 
 
-func _ground_color(x: float, z: float, h: float, nrm: Vector3) -> Color:
-	var v := _detail_noise.get_noise_2d(x, z)
-	var grass := Color(0.33 + v * 0.04, 0.5 + v * 0.06, 0.23)
-	var meadow := Color(0.52, 0.56, 0.28)
-	var dirt := Color(0.5, 0.39, 0.25)
-	var rock := Color(0.46, 0.44, 0.41)
-	var snow := Color(0.9, 0.92, 0.95)
-	var sand := Color(0.72, 0.66, 0.48)
-	var c := grass.lerp(meadow, clampf(_forest_noise.get_noise_2d(x * 2.0, z * 2.0) * 0.8, 0.0, 0.6))
+## Ground material weights at a point: r = dirt, g = rock, b = sand, a = snow
+## (grass is whatever remains). Shared by the terrain shader, grass and trees.
+func ground_weights(x: float, z: float) -> Color:
+	var h := VeliciaTerrain.height_at(x, z)
+	var nrm := VeliciaTerrain.normal_at(x, z)
 	var slope := 1.0 - nrm.y
-	if h < VeliciaTerrain.water_level + 0.9:
-		c = sand
-	if VeliciaTerrain.in_flat_zone(x, z, -4.0):
-		c = c.lerp(dirt, 0.55)
-	if _path_distance(x, z) < 2.6:
-		c = dirt.lerp(c, 0.2)
-	c = c.lerp(rock, smoothstep(0.25, 0.45, slope))
-	c = c.lerp(rock, smoothstep(16.0, 24.0, h))
-	c = c.lerp(snow, smoothstep(40.0, 48.0, h))
-	return c
+	var dirt := 0.0
+	if VeliciaTerrain.in_flat_zone(x, z, -3.0):
+		dirt = 0.7
+	elif VeliciaTerrain.in_flat_zone(x, z, 2.0):
+		dirt = 0.35
+	var pd := _path_distance(x, z)
+	dirt = maxf(dirt, 1.0 - smoothstep(1.4, 3.2, pd))
+	dirt = maxf(dirt, clampf(_detail_noise.get_noise_2d(x * 0.6, z * 0.6) - 0.35, 0.0, 1.0) * 1.2)
+	var rock := maxf(smoothstep(0.22, 0.42, slope), smoothstep(17.0, 25.0, h))
+	var sand := 1.0 - smoothstep(VeliciaTerrain.water_level + 0.4, VeliciaTerrain.water_level + 1.6, h)
+	var snow := smoothstep(38.0, 46.0, h) * (1.0 - smoothstep(0.35, 0.6, slope))
+	rock *= 1.0 - snow
+	dirt *= 1.0 - rock
+	return Color(clampf(dirt, 0.0, 1.0), clampf(rock, 0.0, 1.0), clampf(sand, 0.0, 1.0), clampf(snow, 0.0, 1.0))
 
 
 func _build_paths() -> void:
@@ -229,17 +250,14 @@ func _path_distance(x: float, z: float) -> float:
 
 
 func _build_water() -> void:
-	var water := StandardMaterial3D.new()
-	water.albedo_color = Color(0.22, 0.45, 0.58, 0.72)
-	water.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	water.roughness = 0.15
-	water.metallic = 0.2
 	var plane := PlaneMesh.new()
 	plane.size = Vector2(region_size, region_size)
+	plane.subdivide_width = 48
+	plane.subdivide_depth = 48
 	var mi := MeshInstance3D.new()
 	mi.name = "Water"
 	mi.mesh = plane
-	mi.material_override = water
+	mi.material_override = VeliciaMaterials.water()
 	mi.position = Vector3(0, VeliciaTerrain.water_level, 0)
 	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(mi)
@@ -262,7 +280,7 @@ func _build_bounds() -> void:
 # -------------------------------------------------------------- Vegetation
 
 func _build_trees() -> void:
-	var density: float = {"low": 0.5, "medium": 0.8, "high": 1.0}.get(_quality, 0.8)
+	var density: float = {"low": 0.45, "medium": 0.75, "high": 1.0}.get(_quality, 0.75)
 	var half := region_size * 0.5
 	var rng := RandomNumberGenerator.new()
 	rng.seed = terrain_seed
@@ -272,7 +290,7 @@ func _build_trees() -> void:
 	_tree_colliders.name = "TreeColliders"
 	add_child(_tree_colliders)
 	var trunk_shape := CylinderShape3D.new()
-	trunk_shape.radius = 0.38
+	trunk_shape.radius = 0.36
 	trunk_shape.height = 4.0
 	var x := -half + 10.0
 	while x < half - 10.0:
@@ -281,7 +299,7 @@ func _build_trees() -> void:
 			var px := x + rng.randf_range(-2.8, 2.8)
 			var pz := z + rng.randf_range(-2.8, 2.8)
 			z += step
-			var chance := 0.06 + clampf(_forest_noise.get_noise_2d(px, pz) + 0.15, 0.0, 1.0) * 0.55
+			var chance := 0.05 + clampf(_forest_noise.get_noise_2d(px, pz) + 0.15, 0.0, 1.0) * 0.55
 			for f in forests:
 				var d := Vector2(px, pz).distance_to(Vector2(f.x, f.y))
 				chance += (1.0 - smoothstep(f.z * 0.4, f.z, d)) * f.w
@@ -290,67 +308,30 @@ func _build_trees() -> void:
 			if VeliciaTerrain.in_flat_zone(px, pz, 5.0) or VeliciaTerrain.in_lake(px, pz, 2.0) or _path_distance(px, pz) < 4.0:
 				continue
 			var h := VeliciaTerrain.height_at(px, pz)
-			if h > 28.0 or VeliciaTerrain.normal_at(px, pz).y < 0.8:
+			if h > 30.0 or VeliciaTerrain.normal_at(px, pz).y < 0.82:
 				continue
 			var key := Vector2i(floori(px / CHUNK), floori(pz / CHUNK))
 			if not chunks.has(key):
-				chunks[key] = {"pine": [], "broad": []}
-			var kind := "pine" if rng.randf() < 0.55 or h > 16.0 else "broad"
-			var s := rng.randf_range(0.8, 1.35)
-			var t := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.2), s)), Vector3(px, h - 0.1, pz))
-			chunks[key][kind].append([t, rng.randf()])
+				chunks[key] = {}
+			var is_pine := rng.randf() < 0.5 or h > 15.0
+			var variant := ("pine%d" if is_pine else "broad%d") % rng.randi_range(0, 1)
+			if not chunks[key].has(variant):
+				chunks[key][variant] = []
+			var s := rng.randf_range(0.8, 1.25)
+			var t := Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3(s, s * rng.randf_range(0.9, 1.15), s)), Vector3(px, h - 0.15, pz))
+			chunks[key][variant].append([t, rng.randf()])
 			var col := CollisionShape3D.new()
 			col.shape = trunk_shape
 			col.position = Vector3(px, h + 2.0, pz)
 			_tree_colliders.add_child(col)
 		x += step
 	var view := float(Settings.get_value("graphics", "view_distance"))
-	var trunk_mesh := PlaceholderBody.cylinder_mesh(0.22, 0.34, 4.0, 6)
-	var pine_mesh := _pine_mesh()
-	var broad_mesh := _broad_mesh()
-	var trunk_mat := PlaceholderBody.mat(Color(0.36, 0.25, 0.16))
-	var leaf_mat := StandardMaterial3D.new()
-	leaf_mat.vertex_color_use_as_albedo = true
-	leaf_mat.roughness = 0.9
 	for key in chunks:
-		var all := []
-		all.append_array(chunks[key].pine)
-		all.append_array(chunks[key].broad)
-		_multimesh(trunk_mesh, trunk_mat, all, Vector3(0, 2.0, 0), view, Color(1, 1, 1), false)
-		_multimesh(pine_mesh, leaf_mat, chunks[key].pine, Vector3(0, 3.2, 0), view, Color(0.2, 0.42, 0.26), true)
-		_multimesh(broad_mesh, leaf_mat, chunks[key].broad, Vector3(0, 4.6, 0), view, Color(0.36, 0.55, 0.24), true)
-
-
-func _pine_mesh() -> Mesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var tiers := [[0.0, 2.2, 3.0], [1.6, 1.7, 2.6], [3.0, 1.15, 2.2]]
-	for tier in tiers:
-		var base_y: float = tier[0]
-		var r: float = tier[1]
-		var hgt: float = tier[2]
-		var sides := 7
-		for i in sides:
-			var a0 := TAU * i / sides
-			var a1 := TAU * (i + 1) / sides
-			var p0 := Vector3(cos(a0) * r, base_y, sin(a0) * r)
-			var p1 := Vector3(cos(a1) * r, base_y, sin(a1) * r)
-			var top := Vector3(0, base_y + hgt, 0)
-			var nrm := (p1 - p0).cross(top - p0).normalized() * -1.0
-			st.set_normal(nrm)
-			st.add_vertex(p0)
-			st.add_vertex(top)
-			st.add_vertex(p1)
-	return st.commit()
-
-
-func _broad_mesh() -> Mesh:
-	var m := SphereMesh.new()
-	m.radius = 2.4
-	m.height = 3.8
-	m.radial_segments = 8
-	m.rings = 4
-	return m
+		for variant in chunks[key]:
+			var v := int(String(variant).right(1))
+			var mesh: Mesh = Vegetation.pine(v) if String(variant).begins_with("pine") else Vegetation.broadleaf(v)
+			var tint := Color(0.85, 0.95, 0.85) if String(variant).begins_with("pine") else Color(1.0, 1.0, 0.9)
+			_multimesh(mesh, null, chunks[key][variant], Vector3.ZERO, view, tint, true)
 
 
 func _multimesh(mesh: Mesh, material: Material, entries: Array, offset: Vector3, view: float, base_color: Color, tint: bool) -> void:
@@ -363,14 +344,14 @@ func _multimesh(mesh: Mesh, material: Material, entries: Array, offset: Vector3,
 	mm.instance_count = entries.size()
 	for i in entries.size():
 		var t: Transform3D = entries[i][0]
-		var tt := Transform3D(t.basis, t.origin + t.basis * offset)
-		mm.set_instance_transform(i, tt)
+		mm.set_instance_transform(i, Transform3D(t.basis, t.origin + t.basis * offset))
 		if tint:
 			var v: float = entries[i][1]
-			mm.set_instance_color(i, base_color.lerp(base_color.lightened(0.25), v).darkened(0.1 * (1.0 - v)))
+			mm.set_instance_color(i, base_color.lerp(base_color.lightened(0.18), v).darkened(0.12 * (1.0 - v)))
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
-	mmi.material_override = material
+	if material:
+		mmi.material_override = material
 	mmi.visibility_range_end = view
 	add_child(mmi)
 
@@ -379,35 +360,29 @@ func _build_rocks() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = terrain_seed + 3
 	var half := region_size * 0.5
-	var rock_mesh := SphereMesh.new()
-	rock_mesh.radius = 1.0
-	rock_mesh.height = 1.6
-	rock_mesh.radial_segments = 6
-	rock_mesh.rings = 3
-	var entries := []
+	var entries := [[], [], []]
 	var body := StaticBody3D.new()
 	body.name = "RockColliders"
 	add_child(body)
-	for i in 160:
+	for i in 190:
 		var x := rng.randf_range(-half + 12.0, half - 12.0)
 		var z := rng.randf_range(-half + 12.0, half - 12.0)
 		if VeliciaTerrain.in_flat_zone(x, z, 3.0) or _path_distance(x, z) < 3.5:
 			continue
 		var h := VeliciaTerrain.height_at(x, z)
-		var s := rng.randf_range(0.4, 2.2)
-		var t := Transform3D(Basis.from_euler(Vector3(rng.randf() * 0.5, rng.randf() * TAU, rng.randf() * 0.5)).scaled(Vector3(s * rng.randf_range(0.9, 1.5), s * rng.randf_range(0.6, 1.0), s)), Vector3(x, h + s * 0.2, z))
-		entries.append([t, rng.randf()])
-		if s > 1.1:
+		var s := rng.randf_range(0.35, 2.4)
+		var t := Transform3D(Basis.from_euler(Vector3(rng.randf() * 0.3, rng.randf() * TAU, rng.randf() * 0.3)).scaled(Vector3(s * rng.randf_range(0.9, 1.5), s * rng.randf_range(0.7, 1.1), s)), Vector3(x, h + s * 0.15, z))
+		entries[i % 3].append([t, rng.randf()])
+		if s > 1.0:
 			var col := CollisionShape3D.new()
 			var sphere := SphereShape3D.new()
 			sphere.radius = s * 0.85
 			col.shape = sphere
-			col.position = Vector3(x, h + s * 0.2, z)
+			col.position = Vector3(x, h + s * 0.15, z)
 			body.add_child(col)
-	var rock_mat := StandardMaterial3D.new()
-	rock_mat.vertex_color_use_as_albedo = true
-	rock_mat.roughness = 1.0
-	_multimesh(rock_mesh, rock_mat, entries, Vector3.ZERO, float(Settings.get_value("graphics", "view_distance")), Color(0.5, 0.48, 0.45), true)
+	var view := float(Settings.get_value("graphics", "view_distance"))
+	for v in 3:
+		_multimesh(Vegetation.rock(v), null, entries[v], Vector3.ZERO, view, Color.WHITE, false)
 
 
 # --------------------------------------------------------- Structure kits
@@ -472,6 +447,53 @@ func _build_structure(lt: LocationTrigger) -> void:
 			_kit_lake_ruin(root)
 		"glade":
 			_kit_glade(root)
+	merge_static_meshes(root)
+
+
+## Combines every static MeshInstance3D under `root` into one mesh with a
+## surface per material (draw calls drop from dozens to a handful per kit).
+## Nodes tagged with the "dynamic" meta are left alone.
+static func merge_static_meshes(root: Node3D) -> void:
+	var by_mat := {}
+	var victims: Array[MeshInstance3D] = []
+	var inv := root.global_transform.affine_inverse() if root.is_inside_tree() else Transform3D.IDENTITY
+	for n in root.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.has_meta("dynamic") or mi.mesh == null or mi.get_parent().has_meta("dynamic"):
+			continue
+		var xf := _relative_transform(mi, root)
+		for surf in mi.mesh.get_surface_count():
+			var m: Material = mi.material_override if mi.material_override else mi.mesh.surface_get_material(surf)
+			if not by_mat.has(m):
+				by_mat[m] = []
+			by_mat[m].append([mi.mesh, surf, xf])
+		victims.append(mi)
+	if victims.size() < 2:
+		return
+	var mesh := ArrayMesh.new()
+	for m in by_mat:
+		var st := SurfaceTool.new()
+		for e in by_mat[m]:
+			st.append_from(e[0], e[1], e[2])
+		st.commit(mesh)
+		mesh.surface_set_material(mesh.get_surface_count() - 1, m)
+	for mi in victims:
+		mi.get_parent().remove_child(mi)
+		mi.queue_free()
+	var merged := MeshInstance3D.new()
+	merged.name = "MergedMesh"
+	merged.mesh = mesh
+	root.add_child(merged)
+
+
+static func _relative_transform(node: Node3D, root: Node3D) -> Transform3D:
+	var xf := node.transform
+	var p := node.get_parent()
+	while p and p != root:
+		if p is Node3D:
+			xf = (p as Node3D).transform * xf
+		p = p.get_parent()
+	return xf
 
 
 func _ground(root: Node3D, local: Vector3) -> Vector3:
@@ -485,7 +507,7 @@ func _tent(root: Node3D, pos: Vector3, rot: float, color: Color, scale_f: float 
 	t.position = _ground(root, pos)
 	t.rotation.y = rot
 	root.add_child(t)
-	var cloth := PlaceholderBody.mat(color)
+	var cloth := VeliciaMaterials.surface("fabric", color.lightened(0.15), 0.8, 0.95)
 	for side in [-1.0, 1.0]:
 		var panel := MeshInstance3D.new()
 		panel.mesh = PlaceholderBody.box_mesh(Vector3(2.6, 0.06, 3.4) * scale_f)
@@ -509,7 +531,7 @@ func _campfire(root: Node3D, pos: Vector3) -> void:
 		var ang := TAU * i / 6.0
 		var stone := MeshInstance3D.new()
 		stone.mesh = PlaceholderBody.sphere_mesh(0.22)
-		stone.material_override = PlaceholderBody.mat(Color(0.4, 0.4, 0.4))
+		stone.material_override = VeliciaMaterials.surface("rock", Color(0.8, 0.78, 0.75), 1.5)
 		stone.position = p + Vector3(cos(ang) * 0.7, 0.1, sin(ang) * 0.7)
 		root.add_child(stone)
 	var fire := MeshInstance3D.new()
@@ -529,10 +551,10 @@ func _campfire(root: Node3D, pos: Vector3) -> void:
 
 func _banner(root: Node3D, pos: Vector3, color: Color, accent: Color) -> void:
 	var p := _ground(root, pos)
-	_column(root, 0.07, 0.09, 4.5, p + Vector3(0, 2.25, 0), PlaceholderBody.mat(Color(0.35, 0.25, 0.15)), false, 6)
+	_column(root, 0.07, 0.09, 4.5, p + Vector3(0, 2.25, 0), VeliciaMaterials.surface("bark", Color.WHITE, 1.2, 0.95, false), false, 6)
 	var cloth := MeshInstance3D.new()
 	cloth.mesh = PlaceholderBody.box_mesh(Vector3(0.9, 1.8, 0.04))
-	cloth.material_override = PlaceholderBody.mat(color)
+	cloth.material_override = VeliciaMaterials.surface("fabric", color.lightened(0.1), 1.2)
 	cloth.position = p + Vector3(0.48, 3.4, 0)
 	root.add_child(cloth)
 	var emblem := MeshInstance3D.new()
@@ -544,7 +566,8 @@ func _banner(root: Node3D, pos: Vector3, color: Color, accent: Color) -> void:
 
 
 func _kit_outpost(root: Node3D, lt: LocationTrigger) -> void:
-	var log_mat := PlaceholderBody.mat(Color(0.42, 0.3, 0.18))
+	var log_mat := VeliciaMaterials.surface("bark", Color(1.05, 0.95, 0.85), 0.7, 0.95, false)
+	var plank_mat := VeliciaMaterials.surface("planks", Color.WHITE, 0.5)
 	var r := lt.flatten_radius - 3.0
 	var count := 56
 	for i in count:
@@ -560,11 +583,11 @@ func _kit_outpost(root: Node3D, lt: LocationTrigger) -> void:
 	var tw := _ground(root, Vector3(-r + 3.0, 0, -r + 5.0))
 	for corner in [Vector3(-1, 0, -1), Vector3(1, 0, -1), Vector3(-1, 0, 1), Vector3(1, 0, 1)]:
 		_column(root, 0.15, 0.18, 7.0, tw + corner * 1.2 + Vector3(0, 3.5, 0), log_mat, true, 5)
-	_solid(root, Vector3(3.4, 0.25, 3.4), tw + Vector3(0, 7.0, 0), 0.0, log_mat)
-	_solid(root, Vector3(3.6, 1.0, 0.12), tw + Vector3(0, 7.6, -1.7), 0.0, log_mat, false)
+	_solid(root, Vector3(3.4, 0.25, 3.4), tw + Vector3(0, 7.0, 0), 0.0, plank_mat)
+	_solid(root, Vector3(3.6, 1.0, 0.12), tw + Vector3(0, 7.6, -1.7), 0.0, plank_mat, false)
 	var roof := MeshInstance3D.new()
 	roof.mesh = PlaceholderBody.cylinder_mesh(0.0, 2.8, 1.6, 4)
-	roof.material_override = PlaceholderBody.mat(Color(0.25, 0.33, 0.5))
+	roof.material_override = VeliciaMaterials.surface("fabric", Color(0.35, 0.45, 0.65), 0.8)
 	roof.position = tw + Vector3(0, 9.0, 0)
 	roof.rotation.y = PI * 0.25
 	root.add_child(roof)
@@ -578,16 +601,16 @@ func _kit_outpost(root: Node3D, lt: LocationTrigger) -> void:
 		_banner(root, p, Color(0.2, 0.3, 0.5), Color(0.9, 0.75, 0.3))
 	for p in [Vector3(-9, 0, -4), Vector3(-10.5, 0, -6)]:
 		var gp := _ground(root, p)
-		_column(root, 0.18, 0.22, 1.7, gp + Vector3(0, 0.85, 0), PlaceholderBody.mat(Color(0.6, 0.5, 0.32)), true, 6)
+		_column(root, 0.18, 0.22, 1.7, gp + Vector3(0, 0.85, 0), VeliciaMaterials.surface("planks", Color(1.1, 1.0, 0.85), 1.0), true, 6)
 		_solid(root, Vector3(1.2, 0.15, 0.15), gp + Vector3(0, 1.3, 0), 0.0, log_mat, false)
 	# Supply crates
 	for p in [Vector3(4, 0, -9), Vector3(5, 0, -8.2), Vector3(4.5, 0.8, -8.6)]:
-		_solid(root, Vector3(0.8, 0.8, 0.8), _ground(root, p) + Vector3(0, 0.4, 0), 0.3, PlaceholderBody.mat(Color(0.55, 0.42, 0.26)))
+		_solid(root, Vector3(0.8, 0.8, 0.8), _ground(root, p) + Vector3(0, 0.4, 0), 0.3, VeliciaMaterials.surface("planks", Color.WHITE, 1.0))
 
 
 func _kit_spire(root: Node3D) -> void:
-	var stone := PlaceholderBody.mat(Color(0.66, 0.63, 0.56), 0.9)
-	var dark := PlaceholderBody.mat(Color(0.46, 0.45, 0.42), 0.9)
+	var stone := VeliciaMaterials.surface("stone_wall", Color(1.15, 1.12, 1.05), 0.35)
+	var dark := VeliciaMaterials.surface("stone_wall", Color(0.85, 0.84, 0.8), 0.35)
 	var glow := PlaceholderBody.mat(Color(0.45, 0.95, 1.0), 0.2, 3.0)
 	_column(root, 8.0, 9.0, 1.2, Vector3(0, 0.4, 0), dark, true, 12)
 	# Tapering tower: the region's landmark, visible from the outpost.
@@ -623,6 +646,7 @@ func _kit_spire(root: Node3D) -> void:
 	halo.mesh = torus
 	halo.material_override = glow
 	halo.position = Vector3(0, y + 3.0, 0)
+	halo.set_meta("dynamic", true)
 	halo.rotation.x = 0.3
 	root.add_child(halo)
 	var spin := create_tween().set_loops()
@@ -653,7 +677,7 @@ func _kit_gyria_camp(root: Node3D) -> void:
 	_tent(root, Vector3(0, 0, -7), 0.1, hide, 1.2)
 	_tent(root, Vector3(8, 0, -4), 1.7, Color(0.4, 0.3, 0.26))
 	_campfire(root, Vector3(0, 0, 0))
-	var stake := PlaceholderBody.mat(Color(0.35, 0.27, 0.18))
+	var stake := VeliciaMaterials.surface("bark", Color(0.9, 0.85, 0.8), 0.8, 0.95, false)
 	for i in 26:
 		var ang := TAU * i / 26.0
 		if i % 6 == 0:
@@ -667,7 +691,7 @@ func _kit_gyria_camp(root: Node3D) -> void:
 	for p in [Vector3(3, 0, -10), Vector3(-9, 0, -2), Vector3(10, 0, 6)]:
 		_banner(root, p, Color(0.5, 0.2, 0.16), Color(0.85, 0.7, 0.45))
 	for p in [Vector3(-3, 0, 8), Vector3(-2, 0, 9), Vector3(-2.5, 0.8, 8.5)]:
-		_solid(root, Vector3(0.9, 0.8, 0.9), _ground(root, p) + Vector3(0, 0.4, 0), 0.5, PlaceholderBody.mat(Color(0.45, 0.35, 0.22)))
+		_solid(root, Vector3(0.9, 0.8, 0.9), _ground(root, p) + Vector3(0, 0.4, 0), 0.5, VeliciaMaterials.surface("planks", Color(0.85, 0.8, 0.75), 1.0))
 	# Weapon racks
 	for p in [Vector3(6, 0, -9)]:
 		var gp := _ground(root, p)
@@ -682,8 +706,8 @@ func _kit_gyria_camp(root: Node3D) -> void:
 
 
 func _kit_fort(root: Node3D) -> void:
-	var stone := PlaceholderBody.mat(Color(0.5, 0.47, 0.42), 0.95)
-	var dark := PlaceholderBody.mat(Color(0.36, 0.34, 0.31), 0.95)
+	var stone := VeliciaMaterials.surface("stone_wall", Color(1.0, 0.97, 0.9), 0.3)
+	var dark := VeliciaMaterials.surface("stone_wall", Color(0.78, 0.76, 0.72), 0.3)
 	var r := 17.0
 	var segs := 20
 	for i in segs:
@@ -708,7 +732,7 @@ func _kit_fort(root: Node3D) -> void:
 
 
 func _kit_grotto(root: Node3D) -> void:
-	var rock := PlaceholderBody.mat(Color(0.4, 0.4, 0.42), 1.0)
+	var rock := VeliciaMaterials.surface("rock", Color(0.85, 0.85, 0.85), 0.35)
 	for i in 14:
 		var ang := TAU * i / 14.0
 		if i == 0:
@@ -738,7 +762,7 @@ func _kit_grotto(root: Node3D) -> void:
 
 
 func _kit_battlefield(root: Node3D) -> void:
-	var wood := PlaceholderBody.mat(Color(0.35, 0.27, 0.18))
+	var wood := VeliciaMaterials.surface("bark", Color.WHITE, 1.5, 0.95, false)
 	var steel := PlaceholderBody.mat(Color(0.5, 0.5, 0.5), 0.5)
 	for i in 26:
 		var p := Vector3(_rng.randf_range(-16, 16), 0, _rng.randf_range(-16, 16))
@@ -754,7 +778,7 @@ func _kit_battlefield(root: Node3D) -> void:
 		for k in 4:
 			var stone := MeshInstance3D.new()
 			stone.mesh = PlaceholderBody.sphere_mesh(0.5 - k * 0.08)
-			stone.material_override = PlaceholderBody.mat(Color(0.55, 0.53, 0.5))
+			stone.material_override = VeliciaMaterials.surface("rock", Color.WHITE, 1.2)
 			stone.position = gp + Vector3(0, 0.4 + k * 0.6, 0)
 			root.add_child(stone)
 	_banner(root, Vector3(-10, 0, -8), Color(0.2, 0.3, 0.5), Color(0.9, 0.75, 0.3))
@@ -762,7 +786,7 @@ func _kit_battlefield(root: Node3D) -> void:
 
 
 func _kit_lake_ruin(root: Node3D) -> void:
-	var stone := PlaceholderBody.mat(Color(0.62, 0.7, 0.72), 0.6)
+	var stone := VeliciaMaterials.surface("stone_wall", Color(0.85, 0.98, 1.05), 0.45)
 	var glow := PlaceholderBody.mat(Color(0.35, 0.85, 0.8), 0.2, 1.8)
 	for i in 7:
 		var ang := TAU * i / 7.0
@@ -777,16 +801,13 @@ func _kit_lake_ruin(root: Node3D) -> void:
 
 
 func _kit_glade(root: Node3D) -> void:
-	var bark := PlaceholderBody.mat(Color(0.32, 0.24, 0.16))
-	_column(root, 1.4, 2.2, 12.0, _ground(root, Vector3.ZERO) + Vector3(0, 6.0, 0), bark, true, 8)
-	var leaves := PlaceholderBody.mat(Color(0.3, 0.5, 0.28), 0.9)
-	for off in [Vector3(0, 14, 0), Vector3(4, 12, 2), Vector3(-4, 12.5, -1), Vector3(1, 12, -4)]:
-		var c := MeshInstance3D.new()
-		c.mesh = PlaceholderBody.sphere_mesh(5.0)
-		c.material_override = leaves
-		c.position = _ground(root, Vector3.ZERO) + off
-		c.scale = Vector3(1, 0.65, 1)
-		root.add_child(c)
+	var bark := VeliciaMaterials.surface("bark", Color.WHITE, 0.6, 0.95, false)
+	_column(root, 0.9, 1.5, 3.0, _ground(root, Vector3.ZERO) + Vector3(0, 1.2, 0), bark, true, 8)
+	var giant := MeshInstance3D.new()
+	giant.mesh = Vegetation.broadleaf(7)
+	giant.position = _ground(root, Vector3.ZERO) - Vector3(0, 0.3, 0)
+	giant.scale = Vector3.ONE * 2.6
+	root.add_child(giant)
 	var cap := PlaceholderBody.mat(Color(0.85, 0.5, 0.65), 0.6, 0.6)
 	for i in 14:
 		var ang := _rng.randf() * TAU

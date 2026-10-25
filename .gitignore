@@ -13,3 +13,5 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+# Downloaded MakeHuman source assets (rebuild with tools/build_characters.py)
+tools/mh_cache/

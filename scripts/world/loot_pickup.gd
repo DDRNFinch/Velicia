@@ -38,6 +38,7 @@ func _ready() -> void:
 	_mesh.mesh = gem
 	_mesh.material_override = PlaceholderBody.mat(col, 0.2, 1.8)
 	_mesh.position.y = 0.6
+	_mesh.visibility_range_end = 60.0
 	_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_mesh)
 	body_entered.connect(_on_body_entered)
