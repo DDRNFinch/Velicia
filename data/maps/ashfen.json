@@ -1,0 +1,218 @@
+{
+ "name": "Ashfen Camp",
+ "music": "camp",
+ "rows": [
+  "TTTTTTTTTTTTTTTTTTTTTT",
+  "TTTTTTTT######TTTTTTTT",
+  "TTT.....#oooo#.....TTT",
+  "TT......#oooo#......TT",
+  "TT.....,..oo..,.....TT",
+  "TT.......=..=.......TT",
+  "T........=..=........T",
+  "T...============.....T",
+  "T...=..........=.....T",
+  "=====..........=.....T",
+  "=......,.......=.....T",
+  "T...=..........=.....T",
+  "T...============.....T",
+  "T........\"\"\"\"......T.T",
+  "TT......\"\"\"\"\"\"....TT.T",
+  "TTT......\"\"\"\".....TT.T",
+  "TTTT...............TTT",
+  "TTTTTTTTTTTTTTTTTTTTTT"
+ ],
+ "objects": [
+  {
+   "sprite": "tent",
+   "x": 5,
+   "y": 8,
+   "w": 2,
+   "h": 2,
+   "solid": true
+  },
+  {
+   "sprite": "tent_red",
+   "x": 12,
+   "y": 8,
+   "w": 2,
+   "h": 2,
+   "solid": true
+  },
+  {
+   "sprite": "tent",
+   "x": 17,
+   "y": 9,
+   "w": 2,
+   "h": 2,
+   "solid": true
+  },
+  {
+   "sprite": "campfire",
+   "x": 9,
+   "y": 10,
+   "anim": 2,
+   "solid": true
+  },
+  {
+   "sprite": "banner",
+   "x": 8,
+   "y": 4
+  },
+  {
+   "sprite": "banner",
+   "x": 13,
+   "y": 4
+  },
+  {
+   "sprite": "crate",
+   "x": 18,
+   "y": 6,
+   "solid": true
+  }
+ ],
+ "warps": [
+  {
+   "x": 0,
+   "y": 9,
+   "to": "route1",
+   "tx": 18,
+   "ty": 9,
+   "facing": "left"
+  },
+  {
+   "x": 0,
+   "y": 10,
+   "to": "route1",
+   "tx": 18,
+   "ty": 10,
+   "facing": "left"
+  }
+ ],
+ "encounters": {
+  "rate": 0.1,
+  "table": [
+   [
+    "alpha",
+    5,
+    7,
+    2
+   ],
+   [
+    "epsilon",
+    5,
+    7,
+    2
+   ],
+   [
+    "delta",
+    5,
+    6,
+    1
+   ]
+  ]
+ },
+ "npcs": [
+  {
+   "id": "kesh",
+   "name": "Kesh",
+   "sprite": "kesh",
+   "x": 19,
+   "y": 12,
+   "facing": "left",
+   "dialogue": "kesh"
+  }
+ ],
+ "trainers": [
+  {
+   "id": "camp_a",
+   "name": "Gyria Blade",
+   "sprite": "gyria",
+   "x": 7,
+   "y": 6,
+   "facing": "down",
+   "sight": 4,
+   "intro": "Intruder! Blades out!",
+   "lose": "Gah! Go, then. Vorga will finish you.",
+   "team": [
+    {
+     "fighter": "gyria",
+     "name": "Blade Korr",
+     "level": 6
+    },
+    {
+     "species": "alpha",
+     "level": 5
+    }
+   ],
+   "reward": 120
+  },
+  {
+   "id": "camp_b",
+   "name": "Gyria Archer",
+   "sprite": "gyria_archer",
+   "x": 14,
+   "y": 6,
+   "facing": "down",
+   "sight": 4,
+   "intro": "One more step and you're a pincushion.",
+   "lose": "My string snapped. That's my story.",
+   "team": [
+    {
+     "fighter": "gyria_archer",
+     "name": "Archer Vey",
+     "level": 6
+    },
+    {
+     "species": "delta",
+     "level": 6
+    }
+   ],
+   "reward": 120
+  },
+  {
+   "id": "warchief",
+   "name": "Warchief Vorga",
+   "sprite": "gyria_boss",
+   "x": 11,
+   "y": 3,
+   "facing": "down",
+   "sight": 2,
+   "boss": true,
+   "requires_flag": "",
+   "intro": "So the Guild sends a whelp with a ring. I am Vorga. My clan does not run twice!",
+   "lose": "...Strong. The Withering is stronger. Remember that, warden.",
+   "team": [
+    {
+     "fighter": "gyria_boss",
+     "name": "Warchief Vorga",
+     "level": 9
+    },
+    {
+     "species": "epsilon",
+     "level": 7
+    }
+   ],
+   "reward": 300,
+   "flag": "warchief_defeated"
+  }
+ ],
+ "signs": [
+  {
+   "x": 3,
+   "y": 9,
+   "text": "A scratched marker: 'ASHFEN. Turn back.'"
+  }
+ ],
+ "items": [
+  {
+   "id": "camp_chest",
+   "x": 20,
+   "y": 15,
+   "item": "heart_vessel",
+   "count": 1
+  }
+ ],
+ "stones": [],
+ "width": 22,
+ "height": 18
+}

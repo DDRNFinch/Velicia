@@ -1,0 +1,8 @@
+{
+ "binding_ring": {"name": "Binding Ring", "desc": "A plain Guild ring. Throw it at a weakened wild creature to bind it.", "kind": "capture", "price": 40, "bonus": 1.0},
+ "silver_ring": {"name": "Silver Ring", "desc": "A finer ring that binds creatures more easily.", "kind": "capture", "price": 120, "bonus": 1.6},
+ "tonic": {"name": "Tonic", "desc": "Restores 25 HP to a ring creature.", "kind": "heal_creature", "amount": 25, "price": 30},
+ "elixir": {"name": "Hearty Elixir", "desc": "Restores all of your hearts.", "kind": "heal_player", "price": 60},
+ "heart_vessel": {"name": "Heart Vessel", "desc": "Your maximum hearts increase by one.", "kind": "heart_vessel", "price": 0},
+ "kesh_token": {"name": "Kesh's Token", "desc": "A carved bone token given by a Gyria scout.", "kind": "key", "price": 0}
+}

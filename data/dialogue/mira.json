@@ -1,0 +1,16 @@
+{
+ "_draft": true,
+ "entry": [
+  {
+   "node": "a"
+  }
+ ],
+ "nodes": {
+  "a": {
+   "text": [
+    "The Warden says not to wander east. So naturally my brother wandered east.",
+    "He came back. Without his boots."
+   ]
+  }
+ }
+}

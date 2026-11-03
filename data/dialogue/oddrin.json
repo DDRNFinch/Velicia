@@ -1,0 +1,100 @@
+{
+ "_draft": true,
+ "entry": [
+  {
+   "if": [
+    "quest:emoria_watch=get_ring"
+   ],
+   "node": "first"
+  },
+  {
+   "if": [
+    "quest:first_bond=report"
+   ],
+   "node": "bond_report"
+  },
+  {
+   "if": [
+    "!quest_started:emoria_watch"
+   ],
+   "node": "early"
+  },
+  {
+   "if": [
+    "quest:emoria_watch=meet_warden"
+   ],
+   "node": "early"
+  },
+  {
+   "node": "train"
+  }
+ ],
+ "nodes": {
+  "early": {
+   "text": [
+    "Hm? Report to the Warden first, tall one. Rings are not handed out to strangers."
+   ]
+  },
+  "first": {
+   "text": [
+    "Hah. Another tall one with an empty ring. I'm Oddrin, ring-sage of this outpost.",
+    "A ring is a promise. You bind a creature, you protect it - and it fights beside you.",
+    "I keep three young creatures for new wardens. Choose one. Choose well."
+   ],
+   "do": [
+    "starter"
+   ],
+   "next": "after_pick"
+  },
+  "after_pick": {
+   "text": [
+    "Good. Wild creatures hide in tall grass. When one jumps out, you fight it together - creature and warrior.",
+    "Weaken it, then throw a Binding Ring. Here, take five. Then find Scout Vel on the Hollow Road."
+   ],
+   "do": [
+    "give:binding_ring:5",
+    "give:tonic:2",
+    "quest_stage:emoria_watch:scout",
+    "quest_start:first_bond"
+   ]
+  },
+  "bond_report": {
+   "text": [
+    "Oh-ho! Look at that. Bound and not even bitten. Here, a few rings more - and these tonics."
+   ],
+   "do": [
+    "give:binding_ring:3",
+    "give:tonic:2",
+    "quest_done:first_bond"
+   ]
+  },
+  "train": {
+   "text": [
+    "Tired? The Ring Stone outside restores you all. Or I can see to your creatures now."
+   ],
+   "choices": [
+    {
+     "text": "Please heal my creatures.",
+     "next": "heal"
+    },
+    {
+     "text": "Not now.",
+     "next": "bye"
+    }
+   ]
+  },
+  "heal": {
+   "text": [
+    "There. Spirits restored, scratches gone. Off you go."
+   ],
+   "do": [
+    "heal_party"
+   ]
+  },
+  "bye": {
+   "text": [
+    "Hmph. Gouran respect stubbornness."
+   ]
+  }
+ }
+}
