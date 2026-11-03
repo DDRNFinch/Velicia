@@ -1,104 +1,38 @@
-# Velicia roadmap — prototype to Android release
+# Velicia roadmap: Game Boy Color-style creature RPG
 
 Legend: ✅ done · 🟡 partial / placeholder · ⬜ not started · 🔒 needs the author's input
 
-## Milestone 0 — Foundation ✅
-- ✅ Godot 4.3 project, Compatibility renderer, landscape, autoload architecture
-- ✅ Input map (keyboard, mouse, gamepad) + Android export preset
-- ✅ Data-driven resources for items, attacks, enemies, creatures, abilities, quests
-- ✅ Automated script check, integration tests, CI, screenshot tool
+## Milestone A: Foundations ✅
+- ✅ Godot 4.3, GBC-style 240x160 canvas (scales cleanly on phones), pixel font, 4-colour art rules
+- ✅ Original art generated from code (tiles, 16x16 walkers, battle sprites, UI frames)
+- ✅ Original chiptune music generated from code (title, town, route, battle, camp, victory)
+- ✅ Headless tests + script checker in CI; Android export preset
 
-## Milestone 1 — Playable warrior in a 3D world ✅
-- ✅ Third-person character: analogue walk/run, sprint, jump, coyote time
-- ✅ Follow camera with collision, touch/mouse/stick look, lock-on framing
-- ✅ Terrain with collision, forests, rocks, water, sky, fog, sun shadows
-- ✅ Landmark: the Sentinel Spire, visible from the starting outpost
-- 🟡 Character art and animation are procedural placeholders
+## Milestone B: Overworld ✅
+- ✅ Tile-by-tile movement, turning on the spot, 3-frame walk cycles, ledges, doors and map edges
+- ✅ Emoria Watch (town), lodging, Guild Hall, quartermaster's shop, Hollow Road, Ashfen Camp
+- ✅ NPCs of all six peoples, signs, items, lore stones, Ring Stones (heal + respawn)
+- ✅ Gyria trainers who spot you and walk over to fight; tall-grass wild encounters
+- ⬜ More towns and routes, caves/dungeons with simple puzzles, surfing/cutting-style travel skills
 
-## Milestone 2 — Combat ✅ (tuning ongoing)
-- ✅ Light combo, heavy (guard break), skill, block, timed parry + riposte, dodge i-frames
-- ✅ Stamina, poise/stagger, knockback, hitstop, camera shake, sparks, numbers
-- ✅ Soft targeting, lock-on, attack buffering and recovery cancels
-- ✅ Gyria skirmisher and spear-warden with telegraphs, guarding, attack tokens
-- ✅ Boss: Warchief with phases, ground telegraphs, charge and roar
-- ✅ Charged heavy attack, perfect dodge with slow-motion counter window
-- ✅ Weapon trails, spark and dust particles, overhead health bars, combat camera pull-back
-- ✅ Gyria bow-scouts (arrows, aim-line telegraph, line of sight, parry deflects arrows)
-- ✅ Gyria shield-wardens (frontal guard; flank or break with heavies)
-- ⬜ Balance pass on real devices
-- ⬜ Gyria shamans, ambushes, enemy morale/retreat
-- ⬜ Animation-driven hit windows (needs skeletal animation)
+## Milestone C: Battles where the warrior fights ✅ (tuning ongoing)
+- ✅ Creature command (moves / SWAP) + warrior command (STRIKE / GUARD / RING / BAG / RUN) every turn
+- ✅ Enemies target your creature or your warrior; GUARD shields the creature; warrior KO = blackout
+- ✅ Wild battles, Gyria warbands (fighter + creature at once), Warchief boss
+- ✅ Binding with rings (HP-based chance, wobbles), XP and levels for creatures *and* the warrior
+- 🟡 Balance pass; status effects; warrior skills and gear upgrades
+- ⬜ Move animations per element; battle backgrounds per area
 
-## Milestone 2b — World rendering upgrade ✅
-- ✅ Procedural PBR textures; blended terrain shader (grass/dirt/rock/sand/snow, triplanar cliffs)
-- ✅ Wind-swept grass around the player, leaf-card trees and fir branches, displaced rocks
-- ✅ Water shader, cloud sky shader, ACES tonemapping, colour grading
-- ✅ Day/night cycle (saved), textured structures, props and character materials
-- ✅ Mobile budgets: merged character and structure meshes, distance culling
-- 🟡 Characters still procedural primitives (species features per the reference sheet:
-  wolf/bear ears, claws, paws, Vapouriun scales and fins, Gouran beard/belly/hood,
-  green Gyria) — they look boxy; realistic rigged models are the next priority (Milestone 7)
+## Milestone D: Creatures 🔒
+- ✅ System: species data, learnsets, element chart (draft), party of 3 + vault, bond
+- 🔒 Official creature roster, names, art direction and lore (author to provide)
+- ⬜ Evolution / ring forging; a creature log (seen/bound)
 
-## Milestone 3 — Touch controls ✅
-- ✅ Floating joystick, look-drag zone, two-thumb button arc, multi-touch
-- ✅ Contextual buttons (capture, interact), ring slots, adjustable size/opacity
-- ⬜ Haptics, customisable layout editor, controller glyphs
+## Milestone E: Story & content 🔒
+- ✅ First chapter slice: the Warden, the starter choice, the scout, Ashfen, Kesh's choice, Vorga
+- 🔒 Story approval (docs/STORY_DRAFT.md), names, region list
+- ⬜ Chapters 2+, more Gyria clans, the Pale Withering mystery, more side quests
 
-## Milestone 4 — Creature rings ✅ (system) / 🔒 (content)
-- ✅ Capture rules (threshold, daze, ring tier, chance), capture channel and failure
-- ✅ Rings (3 worn) and vault, summon/dismiss, exhaustion and recovery
-- ✅ Companion AI: follow, temperaments, commands, abilities, XP and levels
-- ✅ Bond levels unlocking abilities; training at the ring-sage
-- 🔒 Official creature roster and lore (author to provide)
-- ⬜ Creature evolution/affinities, ring forging (Ring Shards), creature combos with player skills
-- ⬜ Final ring VFX and creature models/animations
-
-## Milestone 5 — Region, NPCs, quests, saving ✅
-- ✅ The Hollow March: 9 locations, 3 Ring Stones, 7 NPCs (all six peoples), 9 Gyria + boss, 6 creature spawners, 5 chests, 7 lore pieces, collectibles
-- ✅ Branching JSON dialogue with conditions/effects
-- ✅ Quests: 3-part main chain, 2 side quests; moral choice with consequences and reputation
-- ✅ Discovery, journal, lore, map with quest markers
-- ✅ Versioned saves, backup recovery, migrations; shrine rest/respawn
-- 🔒 Story, names and lore approval (see docs/STORY_DRAFT.md)
-- ⬜ NPC daily schedules (time of day), barks, more side content
-
-## Milestone 6 — Menus, inventory, progression ✅
-- ✅ Main menu, character creator, settings, pause menu with 7 tabs
-- ✅ Inventory, equipment, consumables, loot, levels, attributes, Guild abilities
-- ⬜ Shops and currency, crafting, more weapons per people (spear/axe/dagger movesets)
-- ⬜ Skill tree with combat stances
-
-## Milestone 2c — Realistic characters ✅ (first pass)
-- ✅ Skinned human-anatomy models for all six peoples (+ Gyria boss, 4 human body types) from the CC0 MakeHuman base
-- ✅ Per-people features from the reference sheet: wolf ears, claws and tail (Amir); bear ears, paws, beard (Burrok);
-  blue scales and fins (Vapouriun); pot belly, long beard, hood and robe (Gouran); green skin, pointed ears, tusks (Gyria)
-- ✅ Clothing regions, boots, belts, tunics, cloaks, eyes with irises, eyebrows and lips
-- ✅ The existing combat animations drive the model rigs (arms, spine, head, knees, feet, tail)
-- 🟡 Hair, beards and cloth are shells, not strands/simulated cloth; weapons are still primitive shapes
-- ⬜ Hand-authored animation clips (AnimationTree), facial expressions, armour sets
-
-## Milestone 7 — Art production ⬜
-- ⬜ Style guide and colour script per region
-- 🟡 Rigged models: first-pass realistic models done (Milestone 2c); final art, modular armour and weapons to do
-- ⬜ AnimationTree adapter replacing procedural animation
-- ⬜ Modular environment kit, foliage with LODs/impostors, water shader
-- ⬜ VFX: hits, parry, rings, magic; UI artwork and icons; fonts
-- ⬜ Original music score and recorded SFX; ambience per area; voice (optional)
-
-## Milestone 8 — World expansion ⬜
-- ⬜ Region streaming / travel between regions
-- ⬜ Region 2+ (settlements of each people, Gyria homelands, dungeons)
-- ⬜ Day/night and weather
-- ⬜ Main story acts 1–3, companion characters, faction quests, endings
-
-## Milestone 9 — Performance and device support ⬜
-- 🟡 Pooling, multimesh, distance sleeping, attack tokens (done)
-- ⬜ Profiling on low/mid/high Android devices; target 30 fps low, 60 fps mid+
-- ⬜ Texture compression (ETC2/ASTC) per asset, LODs, occlusion, baked lighting where useful
-- ⬜ Memory and thermal budgets, battery saver mode
-
-## Milestone 10 — Release ⬜
-- ⬜ Release keystore, `.aab` build, Play Console listing, privacy policy (offline, no data collection)
-- ⬜ Accessibility review (text size, colour-blind modes, remapping)
-- ⬜ Localisation pipeline
-- ⬜ Closed testing → open testing → production
+## Milestone F: Release ⬜
+- ⬜ Test on real phones (performance, touch comfort), options menu (text speed, volume)
+- ⬜ Release signing, .aab build, store listing, privacy policy (offline, no data collection)

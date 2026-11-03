@@ -1,0 +1,91 @@
+{
+ "_draft": true,
+ "entry": [
+  {
+   "if": [
+    "flag:kesh_freed"
+   ],
+   "node": "freed"
+  },
+  {
+   "if": [
+    "flag:kesh_held"
+   ],
+   "node": "held"
+  },
+  {
+   "if": [
+    "quest:emoria_watch=camp"
+   ],
+   "node": "meet"
+  },
+  {
+   "if": [
+    "quest:emoria_watch=warchief"
+   ],
+   "node": "meet"
+  },
+  {
+   "node": "silent"
+  }
+ ],
+ "nodes": {
+  "silent": {
+   "text": [
+    "(A Gyria woman sits bound to a post. She watches you and says nothing.)"
+   ]
+  },
+  "meet": {
+   "text": [
+    "(A Gyria woman sits bound to a post by the tents.)",
+    "Come to gloat, human? Vorga tied me here. I told him the truth and he didn't like it.",
+    "We didn't come south to raid. Something is killing the north. The Pale Withering - it takes the colour out of everything, then the life."
+   ],
+   "choices": [
+    {
+     "text": "Cut her free.",
+     "next": "free"
+    },
+    {
+     "text": "You'll answer to the Warden.",
+     "next": "hold"
+    }
+   ]
+  },
+  "free": {
+   "text": [
+    "...You're a strange warden. Here. My token - show it to any Gyria who'll listen.",
+    "Vorga waits north of the fires, by the stones. He hits hard and he hits everyone. Guard when he raises his axe."
+   ],
+   "do": [
+    "flag:kesh_freed",
+    "give:kesh_token:1",
+    "quest_start:kesh",
+    "quest_stage:kesh:report",
+    "quest_stage:emoria_watch:warchief"
+   ]
+  },
+  "hold": {
+   "text": [
+    "Hah. Of course. Then do me one kindness - beat Vorga. He's north of the fires.",
+    "Maybe your Warden will listen better than he did."
+   ],
+   "do": [
+    "flag:kesh_held",
+    "quest_start:kesh",
+    "quest_stage:kesh:report",
+    "quest_stage:emoria_watch:warchief"
+   ]
+  },
+  "freed": {
+   "text": [
+    "Go. Vorga's north of the fires."
+   ]
+  },
+  "held": {
+   "text": [
+    "Still here. Still tied. Go do something useful, warden."
+   ]
+  }
+ }
+}

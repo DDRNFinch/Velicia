@@ -1,0 +1,68 @@
+{
+ "name": "Guild Hall",
+ "music": "guild",
+ "rows": [
+  "WWNWWWWNWW",
+  "KKwwwwwwKK",
+  "wwwwAAwwww",
+  "wwwwwwwwww",
+  "Pwwwrrwwwt",
+  "wwwwrrwwwt",
+  "wwwwrrwwww",
+  "wwwwrrwwww",
+  "wwwwwwwwww",
+  "XXXXMMXXXX"
+ ],
+ "warps": [
+  {
+   "x": 4,
+   "y": 9,
+   "to": "emoria",
+   "tx": 15,
+   "ty": 7,
+   "facing": "down"
+  },
+  {
+   "x": 5,
+   "y": 9,
+   "to": "emoria",
+   "tx": 15,
+   "ty": 7,
+   "facing": "down"
+  }
+ ],
+ "npcs": [
+  {
+   "id": "warden",
+   "name": "Warden Aldren",
+   "sprite": "warden",
+   "x": 2,
+   "y": 3,
+   "facing": "down",
+   "dialogue": "warden"
+  },
+  {
+   "id": "oddrin",
+   "name": "Master Oddrin",
+   "sprite": "gouran",
+   "x": 5,
+   "y": 1,
+   "facing": "down",
+   "dialogue": "oddrin"
+  }
+ ],
+ "signs": [
+  {
+   "x": 4,
+   "y": 2,
+   "text": "Three rings rest on the altar, each humming softly."
+  },
+  {
+   "x": 5,
+   "y": 2,
+   "text": "Three rings rest on the altar, each humming softly."
+  }
+ ],
+ "width": 10,
+ "height": 10
+}

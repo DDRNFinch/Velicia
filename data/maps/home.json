@@ -1,0 +1,47 @@
+{
+ "name": "Guild Lodging",
+ "music": "home",
+ "rows": [
+  "WWNWWWNW",
+  "KKwwwwBw",
+  "wwwwwwBw",
+  "wwwrrwww",
+  "Pwwrrwwt",
+  "wwwwwwwt",
+  "wwwwwwww",
+  "XXXMMXXX"
+ ],
+ "warps": [
+  {
+   "x": 3,
+   "y": 7,
+   "to": "emoria",
+   "tx": 3,
+   "ty": 7,
+   "facing": "down"
+  },
+  {
+   "x": 4,
+   "y": 7,
+   "to": "emoria",
+   "tx": 3,
+   "ty": 7,
+   "facing": "down"
+  }
+ ],
+ "signs": [
+  {
+   "x": 0,
+   "y": 1,
+   "text": "Shelves of Guild ledgers. One is titled 'Rings and How Not to Lose Them'."
+  },
+  {
+   "x": 7,
+   "y": 4,
+   "text": "A note: 'Report to Warden Aldren in the Guild Hall. - A.'"
+  }
+ ],
+ "npcs": [],
+ "width": 8,
+ "height": 8
+}

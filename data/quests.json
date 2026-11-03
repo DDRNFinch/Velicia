@@ -1,0 +1,22 @@
+{
+ "emoria_watch": {"title": "The Emoria Watch", "stages": [
+   {"id": "meet_warden", "text": "Report to Warden Aldren in Emoria Watch."},
+   {"id": "get_ring", "text": "Visit Master Oddrin, the Ring Sage, for your first ring."},
+   {"id": "scout", "text": "Meet Guild Scout Vel on the Hollow Road, north of the village."},
+   {"id": "camp", "text": "Find out what the Gyria are doing at Ashfen Camp in the eastern woods."},
+   {"id": "warchief", "text": "Defeat Warchief Vorga (draft name) at the war tent north of the camp."},
+   {"id": "return", "text": "Return to Warden Aldren with news of Ashfen."}
+ ]},
+ "first_bond": {"title": "A Ring Is a Promise", "stages": [
+   {"id": "catch", "text": "Bind a wild creature in the tall grass with a Binding Ring."},
+   {"id": "report", "text": "Show Master Oddrin your new creature."}
+ ]},
+ "kesh": {"title": "The Prisoner of Ashfen", "stages": [
+   {"id": "decide", "text": "Kesh, a Gyria scout, is held captive in her own camp. Decide what to do."},
+   {"id": "report", "text": "Tell Warden Aldren what you decided about Kesh."}
+ ]},
+ "ilith_stone": {"title": "What the Water Remembers", "stages": [
+   {"id": "read", "text": "Ilith wants you to read the Glassmere Stone, on the lake's south-west shore."},
+   {"id": "report", "text": "Tell Ilith what the stone says."}
+ ]}
+}

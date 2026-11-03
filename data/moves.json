@@ -1,0 +1,196 @@
+{
+ "scratch": {
+  "name": "Scratch",
+  "element": "normal",
+  "power": 40,
+  "accuracy": 1.0,
+  "kind": "attack"
+ },
+ "tackle": {
+  "name": "Tackle",
+  "element": "normal",
+  "power": 40,
+  "accuracy": 1.0,
+  "kind": "attack"
+ },
+ "peck": {
+  "name": "Peck",
+  "element": "gale",
+  "power": 35,
+  "accuracy": 1.0,
+  "kind": "attack"
+ },
+ "growl": {
+  "name": "Growl",
+  "element": "normal",
+  "power": 0,
+  "accuracy": 1.0,
+  "kind": "debuff",
+  "stat": "atk",
+  "stages": -1
+ },
+ "harden": {
+  "name": "Harden",
+  "element": "normal",
+  "power": 0,
+  "accuracy": 1.0,
+  "kind": "buff",
+  "stat": "def",
+  "stages": 1
+ },
+ "quick_dash": {
+  "name": "Quick Dash",
+  "element": "normal",
+  "power": 40,
+  "accuracy": 1.0,
+  "kind": "attack",
+  "priority": 1
+ },
+ "ember_spit": {
+  "name": "Ember Spit",
+  "element": "ember",
+  "power": 45,
+  "accuracy": 1.0,
+  "kind": "attack"
+ },
+ "flame_rush": {
+  "name": "Flame Rush",
+  "element": "ember",
+  "power": 70,
+  "accuracy": 0.9,
+  "kind": "attack"
+ },
+ "water_pulse": {
+  "name": "Water Pulse",
+  "element": "tide",
+  "power": 45,
+  "accuracy": 1.0,
+  "kind": "attack"
+ },
+ "bubble_guard": {
+  "name": "Bubble Guard",
+  "element": "tide",
+  "power": 0,
+  "accuracy": 1.0,
+  "kind": "buff",
+  "stat": "def",
+  "stages": 2
+ },
+ "tidal_slam": {
+  "name": "Tidal Slam",
+  "element": "tide",
+  "power": 70,
+  "accuracy": 0.9,
+  "kind": "attack"
+ },
+ "leaf_cut": {
+  "name": "Leaf Cut",
+  "element": "verdant",
+  "power": 45,
+  "accuracy": 1.0,
+  "kind": "attack"
+ },
+ "mend_root": {
+  "name": "Mend Root",
+  "element": "verdant",
+  "power": 0,
+  "accuracy": 1.0,
+  "kind": "heal",
+  "amount": 0.4
+ },
+ "thorn_volley": {
+  "name": "Thorn Volley",
+  "element": "verdant",
+  "power": 70,
+  "accuracy": 0.9,
+  "kind": "attack"
+ },
+ "gust": {
+  "name": "Gust",
+  "element": "gale",
+  "power": 45,
+  "accuracy": 1.0,
+  "kind": "attack"
+ },
+ "feather_storm": {
+  "name": "Feather Storm",
+  "element": "gale",
+  "power": 65,
+  "accuracy": 0.9,
+  "kind": "attack"
+ },
+ "pebble_toss": {
+  "name": "Pebble Toss",
+  "element": "stone",
+  "power": 45,
+  "accuracy": 0.95,
+  "kind": "attack"
+ },
+ "rock_roll": {
+  "name": "Rock Roll",
+  "element": "stone",
+  "power": 70,
+  "accuracy": 0.85,
+  "kind": "attack"
+ },
+ "strike": {
+  "name": "Strike",
+  "element": "normal",
+  "power": 45,
+  "accuracy": 0.95,
+  "kind": "attack"
+ },
+ "slash": {
+  "name": "Slash",
+  "element": "normal",
+  "power": 40,
+  "accuracy": 0.95,
+  "kind": "attack"
+ },
+ "hook": {
+  "name": "Hook Blade",
+  "element": "normal",
+  "power": 55,
+  "accuracy": 0.85,
+  "kind": "attack"
+ },
+ "arrow_shot": {
+  "name": "Arrow Shot",
+  "element": "gale",
+  "power": 45,
+  "accuracy": 0.9,
+  "kind": "attack"
+ },
+ "volley": {
+  "name": "Volley",
+  "element": "gale",
+  "power": 30,
+  "accuracy": 0.9,
+  "kind": "attack",
+  "all": true
+ },
+ "cleave": {
+  "name": "Cleave",
+  "element": "normal",
+  "power": 55,
+  "accuracy": 0.9,
+  "kind": "attack",
+  "all": true
+ },
+ "war_cry": {
+  "name": "War Cry",
+  "element": "normal",
+  "power": 0,
+  "accuracy": 1.0,
+  "kind": "buff",
+  "stat": "atk",
+  "stages": 1
+ },
+ "skull_bash": {
+  "name": "Crushing Blow",
+  "element": "stone",
+  "power": 70,
+  "accuracy": 0.85,
+  "kind": "attack"
+ }
+}

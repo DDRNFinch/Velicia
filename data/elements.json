@@ -1,0 +1,13 @@
+{
+ "_note": "Draft element chart (attacker -> defender multiplier). Elements are a placeholder design for the creature system.",
+ "names": {"normal": "Plain", "ember": "Ember", "tide": "Tide", "verdant": "Verdant", "gale": "Gale", "stone": "Stone"},
+ "colors": {"normal": "#c8c0b0", "ember": "#f07838", "tide": "#4aa0e8", "verdant": "#6ac050", "gale": "#b0a8f0", "stone": "#b09a78"},
+ "chart": {
+  "ember": {"verdant": 2.0, "gale": 1.0, "tide": 0.5, "stone": 0.5, "ember": 0.5},
+  "tide": {"ember": 2.0, "stone": 2.0, "verdant": 0.5, "tide": 0.5},
+  "verdant": {"tide": 2.0, "stone": 2.0, "ember": 0.5, "gale": 0.5, "verdant": 0.5},
+  "gale": {"verdant": 2.0, "stone": 0.5},
+  "stone": {"ember": 2.0, "gale": 2.0, "verdant": 0.5},
+  "normal": {"stone": 0.5}
+ }
+}
