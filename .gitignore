@@ -10,6 +10,7 @@ build/
 *.aab
 *.keystore
 !debug.keystore.example
+!android/velicia-debug.keystore
 # OS
 .DS_Store
 Thumbs.db

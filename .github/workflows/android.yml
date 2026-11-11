@@ -34,11 +34,11 @@ jobs:
           mv templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
           rm -f ./*.tpz ./*.zip
 
-      - name: Create debug keystore
-        run: |
-          keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android \
-            -keystore "$RUNNER_TEMP/debug.keystore" -storepass android \
-            -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
+      # A fixed debug key (android/velicia-debug.keystore, password "android")
+      # so every build has the same signature and installs over the last one.
+      # It is a debug key only; a release build needs its own private key.
+      - name: Use the project's debug keystore
+        run: cp android/velicia-debug.keystore "$RUNNER_TEMP/debug.keystore"
 
       - name: Configure Godot editor settings for Android
         run: |
