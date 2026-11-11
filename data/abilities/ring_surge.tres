@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ability_definition.gd" id="1_705xj"]
+
+[resource]
+script = ExtResource("1_705xj")
+id = &"ring_surge"
+display_name = "Ring Surge"
+description = "Pour your strength into your ring: your summoned creature heals 30% and deals +50% damage for 8 seconds."
+kind = 1
+unlock_level = 3
+stamina_cost = 25.0
+cooldown = 20.0
+power = 1.5

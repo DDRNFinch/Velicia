@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_vn2k5"]
+
+[resource]
+script = ExtResource("1_vn2k5")
+id = &"player_whirling_cut"
+display_name = "Whirling Cut"
+windup = 0.2
+active = 0.36
+recovery = 0.42
+damage = 1.4
+poise_damage = 25.0
+stamina_cost = 32.0
+hit_shape = 2
+reach = 2.9
+arc_degrees = 110.0
+knockback = 5.0
+lunge_speed = 0.0
+tracking_until = 0.75
+parryable = true
+unblockable = false
+guard_break = false
+is_heavy = true
+min_range = 0.0
+max_range = 2.6
+cooldown = 0.0
+weight = 1.0
+pose = &"spin"
+ground_telegraph = false

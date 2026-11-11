@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/ability_definition.gd" id="1_t3lm6"]
+
+[resource]
+script = ExtResource("1_t3lm6")
+id = &"emoria_riposte"
+display_name = "Emoria Riposte"
+description = "Strikes against parried or dazed foes deal ×2.2 damage instead of ×1.5."
+kind = 0
+unlock_level = 2
+stamina_cost = 0.0
+cooldown = 0.0
+power = 2.2

@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="CreatureDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_ability.gd" id="1_48meq"]
+[ext_resource type="Script" path="res://scripts/data/creature_definition.gd" id="2_20a21"]
+
+[sub_resource type="Resource" id="Resource_0wbjc"]
+script = ExtResource("1_48meq")
+id = &"test_spark"
+display_name = "Test Spark"
+description = "Ranged bolt."
+kind = 1
+power = 0.9
+cooldown = 1.8
+ability_range = 9.0
+windup = 0.45
+poise_damage = 15.0
+required_level = 1
+required_bond = 0
+color = Color(0.5, 0.9, 1, 1)
+
+[sub_resource type="Resource" id="Resource_th8ki"]
+script = ExtResource("1_48meq")
+id = &"test_mend"
+display_name = "Test Mend"
+description = "Heals its warrior."
+kind = 3
+power = 1.4
+cooldown = 12.0
+ability_range = 10.0
+windup = 0.6
+poise_damage = 15.0
+required_level = 1
+required_bond = 0
+color = Color(0.5, 1, 0.6, 1)
+
+[sub_resource type="Resource" id="Resource_vvytp"]
+script = ExtResource("1_48meq")
+id = &"test_ward"
+display_name = "Test Ward"
+description = "Shields itself, reducing damage taken."
+kind = 4
+power = 1.0
+cooldown = 14.0
+ability_range = 20.0
+windup = 0.3
+poise_damage = 15.0
+required_level = 1
+required_bond = 2
+color = Color(0.7, 0.8, 1, 1)
+
+[resource]
+script = ExtResource("2_20a21")
+id = &"test_creature_beta"
+display_name = "Test Creature β"
+is_placeholder = true
+description = "TEMPORARY TEST CREATURE. A hovering placeholder that tests ranged attacks, healing support and the 'must be dazed' capture rule. Not part of the official roster."
+rarity = 1
+temperament = 2
+base_health = 45.0
+base_attack = 7.0
+base_defense = 1.0
+move_speed = 4.8
+health_per_level = 8.0
+attack_per_level = 1.5
+defense_per_level = 0.5
+max_level = 30
+abilities = Array[ExtResource("1_48meq")]([SubResource("Resource_0wbjc"), SubResource("Resource_th8ki"), SubResource("Resource_vvytp")])
+capture_health_threshold = 0.4
+base_capture_chance = 0.55
+min_ring_tier = 1
+capture_condition = &"dazed"
+capture_hint = "Weaken it until it is dazed, then capture before it recovers."
+body_shape = &"hover"
+body_color = Color(0.3, 0.55, 0.85, 1)
+accent_color = Color(0.45, 0.9, 1, 1)
+eye_color = Color(1, 1, 0.8, 1)
+size = 0.9
+wander_radius = 8.0
+flee_when_weak = true
+hostile_on_sight = false

@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AbilityDefinition" load_steps=3 format=3]
+
+[ext_resource type="Resource" path="res://data/attacks/player_whirling_cut.tres" id="1_jm1m6"]
+[ext_resource type="Script" path="res://scripts/data/ability_definition.gd" id="2_y2118"]
+
+[resource]
+script = ExtResource("2_y2118")
+id = &"whirling_cut"
+display_name = "Whirling Cut"
+description = "A spinning cut that strikes all around you. Good against groups. Uses the SKILL button."
+kind = 1
+unlock_level = 1
+stamina_cost = 0.0
+cooldown = 8.0
+power = 1.0
+attack = ExtResource("1_jm1m6")

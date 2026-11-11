@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="QuestDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_definition.gd" id="1_yqcne"]
+[ext_resource type="Script" path="res://scripts/data/quest_stage.gd" id="2_4bq4u"]
+[ext_resource type="Script" path="res://scripts/data/quest_objective.gd" id="3_qifre"]
+
+[sub_resource type="Resource" id="Resource_irjll"]
+script = ExtResource("3_qifre")
+type = 0
+target = &"warden"
+count = 1
+description = "Speak with Warden Aldren"
+marker_location = &"emoria_outpost"
+
+[sub_resource type="Resource" id="Resource_8h1fi"]
+script = ExtResource("2_4bq4u")
+id = &"report"
+journal_text = "You have arrived at the Emoria Watch Outpost on the edge of the Hollow March. Report to the Warden."
+objectives = Array[ExtResource("3_qifre")]([SubResource("Resource_irjll")])
+
+[resource]
+script = ExtResource("1_yqcne")
+id = &"the_emoria_watch"
+title = "The Emoria Watch"
+summary = "Report for duty at the Emoria Watch Outpost."
+is_main = true
+is_draft = true
+stages = Array[ExtResource("2_4bq4u")]([SubResource("Resource_8h1fi")])
+reward_xp = 20
+reward_items = {}
+reward_flags = PackedStringArray()
+reward_reputation = {}
+next_quest = &""

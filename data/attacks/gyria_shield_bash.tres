@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_05jhx"]
+
+[resource]
+script = ExtResource("1_05jhx")
+id = &"gyria_shield_bash"
+display_name = "Shield Bash"
+windup = 0.6
+active = 0.15
+recovery = 0.8
+damage = 10.0
+poise_damage = 32.0
+stamina_cost = 0.0
+hit_shape = 1
+reach = 2.0
+arc_degrees = 110.0
+knockback = 6.0
+lunge_speed = 4.0
+tracking_until = 0.75
+parryable = true
+unblockable = false
+guard_break = false
+is_heavy = false
+projectile_speed = 0.0
+projectile_range = 22.0
+min_range = 0.0
+max_range = 2.2
+cooldown = 3.0
+weight = 1.5
+pose = &"thrust"
+ground_telegraph = false

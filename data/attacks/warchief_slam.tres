@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_udi2x"]
+
+[resource]
+script = ExtResource("1_udi2x")
+id = &"warchief_slam"
+display_name = "Earthbreaker"
+windup = 1.1
+active = 0.2
+recovery = 1.1
+damage = 32.0
+poise_damage = 60.0
+stamina_cost = 0.0
+hit_shape = 2
+reach = 4.2
+arc_degrees = 110.0
+knockback = 8.0
+lunge_speed = 0.0
+tracking_until = 0.75
+parryable = false
+unblockable = true
+guard_break = false
+is_heavy = true
+min_range = 0.0
+max_range = 3.6
+cooldown = 6.0
+weight = 1.6
+pose = &"slam"
+ground_telegraph = true

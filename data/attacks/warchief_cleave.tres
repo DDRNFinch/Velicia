@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_0de8x"]
+
+[resource]
+script = ExtResource("1_0de8x")
+id = &"warchief_cleave"
+display_name = "Cleaver Arc"
+windup = 0.7
+active = 0.18
+recovery = 0.8
+damage = 24.0
+poise_damage = 40.0
+stamina_cost = 0.0
+hit_shape = 0
+reach = 3.3
+arc_degrees = 120.0
+knockback = 5.0
+lunge_speed = 2.5
+tracking_until = 0.75
+parryable = true
+unblockable = false
+guard_break = false
+is_heavy = true
+min_range = 0.0
+max_range = 3.4
+cooldown = 0.6
+weight = 3.0
+pose = &"slash"
+ground_telegraph = false

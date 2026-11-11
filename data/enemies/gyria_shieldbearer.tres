@@ -1,0 +1,41 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_gl2ex"]
+[ext_resource type="Resource" path="res://data/attacks/gyria_slash.tres" id="2_k8j85"]
+[ext_resource type="Resource" path="res://data/attacks/gyria_shield_bash.tres" id="3_b0obg"]
+[ext_resource type="Script" path="res://scripts/data/boss_phase.gd" id="4_3cme4"]
+[ext_resource type="Script" path="res://scripts/data/enemy_definition.gd" id="5_ubhnw"]
+
+[resource]
+script = ExtResource("5_ubhnw")
+id = &"gyria_shieldbearer"
+display_name = "Gyria Shield-warden"
+people = &"gyria"
+tags = PackedStringArray("gyria")
+is_boss = false
+is_draft = true
+max_health = 95.0
+max_poise = 45.0
+defense = 4.0
+walk_speed = 1.9
+run_speed = 3.8
+turn_speed = 7.0
+aggro_range = 14.0
+leash_range = 35.0
+preferred_distance = 2.6
+block_chance = 0.0
+shield = true
+xp_reward = 40
+attacks = Array[ExtResource("1_gl2ex")]([ExtResource("2_k8j85"), ExtResource("3_b0obg")])
+phases = Array[ExtResource("4_3cme4")]([])
+loot = {
+"gyria_scale_vest": 0.05,
+"gyria_token": 0.7,
+"healing_draught": 0.3
+}
+scale = 1.0
+build = &"wiry"
+skin_color = Color(0.45, 0.5, 0.36, 1)
+armor_color = Color(0.4, 0.34, 0.28, 1)
+accent_color = Color(0.6, 0.2, 0.15, 1)
+weapon_kind = &"hookblade"
