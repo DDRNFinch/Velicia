@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="QuestDefinition" load_steps=12 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_definition.gd" id="1_72lpp"]
+[ext_resource type="Script" path="res://scripts/data/quest_stage.gd" id="2_lnt7v"]
+[ext_resource type="Script" path="res://scripts/data/quest_objective.gd" id="3_gmiqa"]
+
+[sub_resource type="Resource" id="Resource_wnscf"]
+script = ExtResource("3_gmiqa")
+type = 4
+target = &"sentinel_spire"
+count = 1
+description = "Travel to the Sentinel Spire"
+marker_location = &"sentinel_spire"
+
+[sub_resource type="Resource" id="Resource_blilj"]
+script = ExtResource("2_lnt7v")
+id = &"investigate"
+journal_text = "The Warden sent you north to the Sentinel Spire, where smoke was seen at dawn."
+objectives = Array[ExtResource("3_gmiqa")]([SubResource("Resource_wnscf")])
+
+[sub_resource type="Resource" id="Resource_31ju5"]
+script = ExtResource("3_gmiqa")
+type = 1
+target = &"gyria_scout"
+count = 3
+description = "Defeat Gyria scouts at the Spire"
+marker_location = &"sentinel_spire"
+
+[sub_resource type="Resource" id="Resource_ku3t6"]
+script = ExtResource("2_lnt7v")
+id = &"drive_off"
+journal_text = "Gyria scouts are searching the ruins around the Spire. Drive them off."
+objectives = Array[ExtResource("3_gmiqa")]([SubResource("Resource_31ju5")])
+
+[sub_resource type="Resource" id="Resource_w6e56"]
+script = ExtResource("3_gmiqa")
+type = 2
+target = &"sealed_letter"
+count = 1
+description = "Find what the scouts were carrying"
+marker_location = &"sentinel_spire"
+
+[sub_resource type="Resource" id="Resource_jnhfk"]
+script = ExtResource("2_lnt7v")
+id = &"search"
+journal_text = "The scouts were looking for something. Search the ruins near the tower."
+objectives = Array[ExtResource("3_gmiqa")]([SubResource("Resource_w6e56")])
+
+[sub_resource type="Resource" id="Resource_kinqx"]
+script = ExtResource("3_gmiqa")
+type = 0
+target = &"warden"
+count = 1
+description = "Bring the letter to Warden Aldren"
+marker_location = &"emoria_outpost"
+
+[sub_resource type="Resource" id="Resource_w6idn"]
+script = ExtResource("2_lnt7v")
+id = &"report"
+journal_text = "You found a sealed Gyria letter. Bring it to the Warden."
+objectives = Array[ExtResource("3_gmiqa")]([SubResource("Resource_kinqx")])
+
+[resource]
+script = ExtResource("1_72lpp")
+id = &"first_watch"
+title = "Smoke over the Spire"
+summary = "Gyria scouts have been seen at the Sentinel Spire, the ancient tower north of the outpost."
+is_main = true
+is_draft = true
+stages = Array[ExtResource("2_lnt7v")]([SubResource("Resource_blilj"), SubResource("Resource_ku3t6"), SubResource("Resource_jnhfk"), SubResource("Resource_w6idn")])
+reward_xp = 120
+reward_items = {
+"bound_ring": 1,
+"healing_draught": 2
+}
+reward_flags = PackedStringArray()
+reward_reputation = {
+"emoria_guild": 10
+}
+next_quest = &"ashes_of_ashfen"

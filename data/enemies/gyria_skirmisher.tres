@@ -1,0 +1,40 @@
+[gd_resource type="Resource" script_class="EnemyDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_t1ur6"]
+[ext_resource type="Resource" path="res://data/attacks/gyria_slash.tres" id="2_s0x6l"]
+[ext_resource type="Resource" path="res://data/attacks/gyria_lunge.tres" id="3_rniu5"]
+[ext_resource type="Script" path="res://scripts/data/boss_phase.gd" id="4_50e86"]
+[ext_resource type="Script" path="res://scripts/data/enemy_definition.gd" id="5_qexo8"]
+
+[resource]
+script = ExtResource("5_qexo8")
+id = &"gyria_skirmisher"
+display_name = "Gyria Skirmisher"
+people = &"gyria"
+tags = PackedStringArray("gyria", "gyria_scout")
+is_boss = false
+is_draft = true
+max_health = 70.0
+max_poise = 30.0
+defense = 0.0
+walk_speed = 2.1
+run_speed = 4.4
+turn_speed = 7.0
+aggro_range = 14.0
+leash_range = 35.0
+preferred_distance = 3.2
+block_chance = 0.3
+xp_reward = 30
+attacks = Array[ExtResource("1_t1ur6")]([ExtResource("2_s0x6l"), ExtResource("3_rniu5")])
+phases = Array[ExtResource("4_50e86")]([])
+loot = {
+"gyria_token": 0.6,
+"healing_draught": 0.25,
+"training_ration": 0.2
+}
+scale = 1.0
+build = &"wiry"
+skin_color = Color(0.45, 0.5, 0.36, 1)
+armor_color = Color(0.32, 0.27, 0.22, 1)
+accent_color = Color(0.6, 0.2, 0.15, 1)
+weapon_kind = &"hookblade"

@@ -1,0 +1,30 @@
+[gd_resource type="Resource" script_class="AttackDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/attack_definition.gd" id="1_54870"]
+
+[resource]
+script = ExtResource("1_54870")
+id = &"gyria_lunge"
+display_name = "Lunging Cut"
+windup = 0.8
+active = 0.16
+recovery = 0.9
+damage = 16.0
+poise_damage = 26.0
+stamina_cost = 0.0
+hit_shape = 1
+reach = 2.4
+arc_degrees = 110.0
+knockback = 4.0
+lunge_speed = 7.5
+tracking_until = 0.75
+parryable = true
+unblockable = false
+guard_break = false
+is_heavy = false
+min_range = 1.6
+max_range = 4.4
+cooldown = 3.0
+weight = 1.5
+pose = &"thrust"
+ground_telegraph = false

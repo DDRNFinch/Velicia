@@ -1,0 +1,93 @@
+[gd_resource type="Resource" script_class="QuestDefinition" load_steps=14 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/quest_definition.gd" id="1_h85pj"]
+[ext_resource type="Script" path="res://scripts/data/quest_stage.gd" id="2_fb606"]
+[ext_resource type="Script" path="res://scripts/data/quest_objective.gd" id="3_rfc2o"]
+
+[sub_resource type="Resource" id="Resource_bd80j"]
+script = ExtResource("3_rfc2o")
+type = 4
+target = &"ashfen_camp"
+count = 1
+description = "Find the Gyria camp at Ashfen"
+marker_location = &"ashfen_camp"
+
+[sub_resource type="Resource" id="Resource_r3247"]
+script = ExtResource("2_fb606")
+id = &"scout"
+journal_text = "The letter speaks of a camp at Ashfen, east of the outpost. Find it."
+objectives = Array[ExtResource("3_rfc2o")]([SubResource("Resource_bd80j")])
+
+[sub_resource type="Resource" id="Resource_814su"]
+script = ExtResource("3_rfc2o")
+type = 5
+target = &"kesh_decided"
+count = 1
+description = "Speak with the wounded scout and decide her fate"
+marker_location = &"ashfen_camp"
+
+[sub_resource type="Resource" id="Resource_8vn56"]
+script = ExtResource("2_fb606")
+id = &"scout_fate"
+journal_text = "A wounded Gyria scout was left behind at the camp. Decide what to do with her."
+objectives = Array[ExtResource("3_rfc2o")]([SubResource("Resource_814su")])
+
+[sub_resource type="Resource" id="Resource_5e44q"]
+script = ExtResource("3_rfc2o")
+type = 4
+target = &"broken_fort"
+count = 1
+description = "Go to the Broken Fort"
+marker_location = &"broken_fort"
+
+[sub_resource type="Resource" id="Resource_soctg"]
+script = ExtResource("2_fb606")
+id = &"fort"
+journal_text = "The Warchief holds the stolen ring-stones at the Broken Fort, north of the Spire."
+objectives = Array[ExtResource("3_rfc2o")]([SubResource("Resource_5e44q")])
+
+[sub_resource type="Resource" id="Resource_0oi5g"]
+script = ExtResource("3_rfc2o")
+type = 1
+target = &"gyria_boss"
+count = 1
+description = "Defeat the Warchief"
+marker_location = &"broken_fort"
+
+[sub_resource type="Resource" id="Resource_w8q0u"]
+script = ExtResource("2_fb606")
+id = &"warchief"
+journal_text = "The Warchief waits within the fort."
+objectives = Array[ExtResource("3_rfc2o")]([SubResource("Resource_0oi5g")])
+
+[sub_resource type="Resource" id="Resource_eslrr"]
+script = ExtResource("3_rfc2o")
+type = 0
+target = &"warden"
+count = 1
+description = "Return to Warden Aldren"
+marker_location = &"emoria_outpost"
+
+[sub_resource type="Resource" id="Resource_bq3sx"]
+script = ExtResource("2_fb606")
+id = &"return"
+journal_text = "The ring-stone is recovered. Return to the Warden."
+objectives = Array[ExtResource("3_rfc2o")]([SubResource("Resource_eslrr")])
+
+[resource]
+script = ExtResource("1_h85pj")
+id = &"ashes_of_ashfen"
+title = "The Ashfen Camp"
+summary = "The letter points to a Gyria war-camp at Ashfen and a Warchief gathering ring-stones."
+is_main = true
+is_draft = true
+stages = Array[ExtResource("2_fb606")]([SubResource("Resource_r3247"), SubResource("Resource_8vn56"), SubResource("Resource_soctg"), SubResource("Resource_w8q0u"), SubResource("Resource_bq3sx")])
+reward_xp = 300
+reward_items = {
+"warden_mail": 1
+}
+reward_flags = PackedStringArray("prologue_complete")
+reward_reputation = {
+"emoria_guild": 15
+}
+next_quest = &""

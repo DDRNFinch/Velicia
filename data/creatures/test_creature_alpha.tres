@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="CreatureDefinition" load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/creature_ability.gd" id="1_8jq16"]
+[ext_resource type="Script" path="res://scripts/data/creature_definition.gd" id="2_1yl8w"]
+
+[sub_resource type="Resource" id="Resource_biuch"]
+script = ExtResource("1_8jq16")
+id = &"test_bite"
+display_name = "Test Bite"
+description = "Quick bite."
+kind = 0
+power = 1.0
+cooldown = 1.6
+ability_range = 1.6
+windup = 0.35
+poise_damage = 15.0
+required_level = 1
+required_bond = 0
+color = Color(1, 0.85, 0.5, 1)
+
+[sub_resource type="Resource" id="Resource_cw0me"]
+script = ExtResource("1_8jq16")
+id = &"test_pounce"
+display_name = "Test Pounce"
+description = "Leaping strike that staggers."
+kind = 0
+power = 1.8
+cooldown = 6.0
+ability_range = 2.2
+windup = 0.5
+poise_damage = 35.0
+required_level = 1
+required_bond = 1
+color = Color(1, 0.6, 0.3, 1)
+
+[sub_resource type="Resource" id="Resource_8x5fp"]
+script = ExtResource("1_8jq16")
+id = &"test_roar_burst"
+display_name = "Test Roar Burst"
+description = "Shockwave around the creature."
+kind = 2
+power = 1.2
+cooldown = 10.0
+ability_range = 3.5
+windup = 0.6
+poise_damage = 15.0
+required_level = 4
+required_bond = 0
+color = Color(1, 0.9, 0.4, 1)
+
+[resource]
+script = ExtResource("2_1yl8w")
+id = &"test_creature_alpha"
+display_name = "Test Creature α"
+is_placeholder = true
+description = "TEMPORARY TEST CREATURE. A quick, bold four-legged placeholder used to test capturing, summoning and melee companion behaviour. Not part of the official roster."
+rarity = 0
+temperament = 0
+base_health = 60.0
+base_attack = 9.0
+base_defense = 2.0
+move_speed = 5.6
+health_per_level = 8.0
+attack_per_level = 1.5
+defense_per_level = 0.5
+max_level = 30
+abilities = Array[ExtResource("1_8jq16")]([SubResource("Resource_biuch"), SubResource("Resource_cw0me"), SubResource("Resource_8x5fp")])
+capture_health_threshold = 0.45
+base_capture_chance = 0.62
+min_ring_tier = 1
+capture_condition = &""
+capture_hint = "Weaken it below 45% health."
+body_shape = &"quadruped"
+body_color = Color(0.72, 0.52, 0.3, 1)
+accent_color = Color(0.95, 0.75, 0.3, 1)
+eye_color = Color(0.4, 1, 0.9, 1)
+size = 0.9
+wander_radius = 8.0
+flee_when_weak = false
+hostile_on_sight = false
